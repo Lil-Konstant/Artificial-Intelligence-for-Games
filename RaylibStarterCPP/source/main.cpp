@@ -1,5 +1,7 @@
 #include "raylib.h"
 #include "MathsClasses.h"
+#include "Player.h"
+#include "EnemyAgent.h"
 
 using namespace MathsClasses;
 
@@ -12,17 +14,20 @@ int main(int argc, char* argv[])
 
     InitWindow(screenWidth, screenHeight, "AI Demonstration - Ronan Richardson s210424");
 
+    Player* player = new Player();
+    EnemyAgent* enemy = new EnemyAgent(player);
+
     SetTargetFPS(60);
     //--------------------------------------------------------------------------------------
 
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
+        float deltaTime = GetFrameTime();
         // Update
         //----------------------------------------------------------------------------------
-        Vec3 v1 = Vec3(1, 2, 3);
-        Vec3 v2 = Vec3(1, 5, 7);
-        float angle = v1.AngleBetween(v2);
+        player->Update(deltaTime);
+        enemy->Update(deltaTime);
 
         //----------------------------------------------------------------------------------
 
@@ -31,6 +36,8 @@ int main(int argc, char* argv[])
         BeginDrawing();
 
         ClearBackground(DARKBLUE);
+        player->Draw();
+        enemy->Draw();
 
         EndDrawing();
         //----------------------------------------------------------------------------------
