@@ -1,10 +1,7 @@
 #include "Agent.h"
 #include "Behaviour.h"
 
-Agent::Agent()
-{
-
-}
+Agent::Agent(Grid* grid) : m_grid(grid) {}
 
 Agent::~Agent()
 {

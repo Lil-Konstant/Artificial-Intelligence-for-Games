@@ -1,6 +1,6 @@
 #include "EnemyAgent.h"
 
-EnemyAgent::EnemyAgent(Agent* target)
+EnemyAgent::EnemyAgent(Agent* target, Grid* grid) : Agent(grid)
 {
 	m_position = Vec3(GetScreenWidth() / 3, GetScreenHeight() / 3, 0);
 	m_target = target;

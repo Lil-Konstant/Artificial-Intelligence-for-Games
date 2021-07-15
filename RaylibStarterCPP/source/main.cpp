@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include "MathsClasses.h"
+#include "Grid.h"
 #include "Player.h"
 #include "EnemyAgent.h"
 
@@ -9,14 +10,14 @@ int main(int argc, char* argv[])
 {
     // Initialization
     //--------------------------------------------------------------------------------------
-    int screenWidth = 800;
-    int screenHeight = 450;
+    int screenSize = 500;
 
-    InitWindow(screenWidth, screenHeight, "AI Demonstration - Ronan Richardson s210424");
+    InitWindow(screenSize, screenSize, "AI Demonstration - Ronan Richardson s210424");
 
-    Player* player = new Player();
-    EnemyAgent* enemy = new EnemyAgent(player);
-
+    Grid* grid = new Grid();
+    Player* player = new Player(grid);
+    EnemyAgent* enemy = new EnemyAgent(player, grid);
+    
     SetTargetFPS(60);
     //--------------------------------------------------------------------------------------
 
@@ -27,6 +28,7 @@ int main(int argc, char* argv[])
         // Update
         //----------------------------------------------------------------------------------
         player->Update(deltaTime);
+        Cell* playerCell = player->m_grid->getCell(player->m_position);
         enemy->Update(deltaTime);
 
         //----------------------------------------------------------------------------------
@@ -36,6 +38,8 @@ int main(int argc, char* argv[])
         BeginDrawing();
 
         ClearBackground(DARKBLUE);
+        grid->Draw();
+        playerCell->Draw(true);
         player->Draw();
         enemy->Draw();
 

@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="source\Agent.cpp" />
     <ClCompile Include="source\EnemyAgent.cpp" />
+    <ClCompile Include="source\Grid.cpp" />
     <ClCompile Include="source\main.cpp" />
     <ClCompile Include="source\MathsClasses.cpp" />
     <ClCompile Include="source\MouseFollowBehaviour.cpp" />
@@ -29,8 +30,11 @@
   <ItemGroup>
     <ClInclude Include="source\Agent.h" />
     <ClInclude Include="source\Behaviour.h" />
+    <ClInclude Include="source\Cell.h" />
     <ClInclude Include="source\DecisionTree.h" />
+    <ClInclude Include="source\Edge.h" />
     <ClInclude Include="source\EnemyAgent.h" />
+    <ClInclude Include="source\Grid.h" />
     <ClInclude Include="source\MathsClasses.h" />
     <ClInclude Include="source\MouseFollowBehaviour.h" />
     <ClInclude Include="source\Player.h" />

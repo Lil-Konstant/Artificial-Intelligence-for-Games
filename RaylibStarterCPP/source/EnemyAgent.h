@@ -8,7 +8,7 @@ class EnemyAgent :
     public Agent
 {
 public:
-    EnemyAgent(Agent* target);
+    EnemyAgent(Agent* target, Grid* grid);
     virtual ~EnemyAgent();
 
     virtual void Update(float deltaTime);

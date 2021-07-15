@@ -1,7 +1,7 @@
 #include "Player.h"
 
 // Construct the player with mouse follow behaviour, and set the target to the players starting position
-Player::Player()
+Player::Player(Grid* grid) : Agent(grid)
 {
 	m_position = Vec3(GetScreenWidth() / 2, GetScreenHeight() / 2, 0);
 

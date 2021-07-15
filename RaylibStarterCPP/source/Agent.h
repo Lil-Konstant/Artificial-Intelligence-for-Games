@@ -1,6 +1,7 @@
 #pragma once
-#include "MathsClasses.h"
 #include "raylib.h"
+#include "MathsClasses.h"
+#include "Grid.h"
 #include <vector>
 
 using namespace MathsClasses;
@@ -9,6 +10,8 @@ class Behaviour;
 class Agent
 {
 public:
+	Grid* m_grid;
+
 	std::vector<Behaviour*> m_behaviourList;
 
 	Vec3 m_position = Vec3(0, 0, 0);
@@ -21,7 +24,7 @@ public:
 	float m_frictionModifier = 0.98;
 	float m_maxSpeed = 150;
 
-	Agent();
+	Agent(Grid* grid);
 	virtual ~Agent();
 
 	virtual void Update(float deltaTime);
