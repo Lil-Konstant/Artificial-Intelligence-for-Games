@@ -9,13 +9,11 @@ bool MouseFollowBehaviour::Update(float deltaTime)
 	if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
 	{
 		m_target = Vec3(GetMouseX(), GetMouseY(), 0);
-		std::cout << "Targetting: " << m_target.x << ", " << m_target.y << std::endl;
 	}
 
 	// Seek towards the current target
 	Vec3 desiredVector = m_target - m_agent->m_position;
 	float distanceToTarget = desiredVector.Magnitude();
-
 
 	if (distanceToTarget == 0)
 		return true;

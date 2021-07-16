@@ -21,16 +21,25 @@ int main(int argc, char* argv[])
     SetTargetFPS(60);
     //--------------------------------------------------------------------------------------
 
+    std::vector<Cell*> path;
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
-        float deltaTime = GetFrameTime();
         // Update
         //----------------------------------------------------------------------------------
+        float deltaTime = GetFrameTime();
         player->Update(deltaTime);
         Cell* playerCell = player->m_grid->getCell(player->m_position);
         enemy->Update(deltaTime);
 
+        // Create a path to the selected cell
+        if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+        {
+            Vec3 mousePosition = Vec3(GetMouseX(), GetMouseY(), 0);
+            Cell* destinationCell = grid->getCell(mousePosition);
+
+            path = grid->aStar(playerCell, destinationCell);
+        }
         //----------------------------------------------------------------------------------
 
         // Draw
@@ -40,6 +49,12 @@ int main(int argc, char* argv[])
         ClearBackground(DARKBLUE);
         grid->Draw();
         playerCell->Draw(true);
+
+        for (int i = 0; i < path.size(); i++)
+        {
+            path[i]->Draw(true, path[i + 1]);
+        }
+
         player->Draw();
         enemy->Draw();
 
