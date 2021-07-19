@@ -9,8 +9,14 @@ public:
 	Player(Grid* grid);
 	virtual ~Player();
 
+	void Update(float deltaTime) override;
 	void Draw() override;
 
+	bool Seek(Cell* target);
+	bool Arrive(Cell* target);
+
 	MouseFollowBehaviour* mouseFollowBehaviour;
+
+	float m_arrivalRadius = 150;
 };
 

@@ -70,10 +70,13 @@ Grid::~Grid()
 // Spacially indexes the grid map to return the grid cell of the inputted vector position
 Cell* Grid::getCell(Vec3 position)
 {
+	Cell* cell = nullptr;
+
 	int columnIndex = (int)(position.x / CELL_SIZE);
 	int rowIndex = (int)(position.y / CELL_SIZE);
-
-	Cell* cell = &m_gridArray[rowIndex][columnIndex];
+	if (columnIndex < NUM_CELLS && rowIndex < NUM_CELLS)
+		cell = &m_gridArray[rowIndex][columnIndex];
+	
 	return cell;
 }
 
@@ -126,8 +129,8 @@ std::vector<Cell*> Grid::aStar(Cell* startCell, Cell* endCell)
 		// For each cell connected to the current cell
 		for (auto edge : currentCell->m_edges)
 		{
-			// If the edge target is yet to be processed and put in the closed list, then attempt to process it
-			if (std::find(closedList.begin(), closedList.end(), edge.m_target) == closedList.end())
+			// If the edge target is yet to be processed and put in the closed list, and is also traversable, then attempt to process it
+			if (std::find(closedList.begin(), closedList.end(), edge.m_target) == closedList.end() && edge.m_target->m_traversable)
 			{
 				// Calculate the g-score from the current node to the edge target, and the f-score of the target
 				float gScore = currentCell->gScore + edge.m_cost;

@@ -10,49 +10,61 @@ int main(int argc, char* argv[])
 {
     // Initialization
     //--------------------------------------------------------------------------------------
-    int screenSize = 500;
-
+    int screenSize = 1000;
     InitWindow(screenSize, screenSize, "AI Demonstration - Ronan Richardson s210424");
 
     Grid* grid = new Grid();
     Player* player = new Player(grid);
     EnemyAgent* enemy = new EnemyAgent(player, grid);
+    bool debugMode = true;
     
     SetTargetFPS(60);
     //--------------------------------------------------------------------------------------
-
-    std::vector<Cell*> path;
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
         // Update
         //----------------------------------------------------------------------------------
         float deltaTime = GetFrameTime();
+        
+        // Update the players position with inputs and then get their current cell
         player->Update(deltaTime);
-        Cell* playerCell = player->m_grid->getCell(player->m_position);
+        // Update the enemy's position with their decision tree
         enemy->Update(deltaTime);
 
-        // Create a path to the selected cell
-        if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+        // Paint the cell as untraversable
+        if (IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON))
         {
             Vec3 mousePosition = Vec3(GetMouseX(), GetMouseY(), 0);
-            Cell* destinationCell = grid->getCell(mousePosition);
+            Cell* cell = grid->getCell(mousePosition);
 
-            path = grid->aStar(playerCell, destinationCell);
+            cell->m_traversable = !cell->m_traversable;
+        }
+        // Toggle debug mode
+        if (IsKeyPressed(KEY_SPACE))
+        {
+            debugMode = !debugMode;
         }
         //----------------------------------------------------------------------------------
 
         // Draw
         //----------------------------------------------------------------------------------
         BeginDrawing();
-
         ClearBackground(DARKBLUE);
-        grid->Draw();
-        playerCell->Draw(true);
-
-        for (int i = 0; i < path.size(); i++)
+        
+        // If in debug mode, draw the grid cells and their connections, as well as the players A* path
+        if (debugMode)
         {
-            path[i]->Draw(true, path[i + 1]);
+            grid->Draw();
+            player->m_grid->getCell(player->m_position)->Draw(true);
+            for (int i = 0; i < player->m_path.size(); i++)
+            {
+                if (i + 1 < player->m_path.size())
+                    player->m_path[i]->Draw(true, player->m_path[i + 1]);
+                else
+                    player->m_path[i]->Draw(true, player->m_path[i]);
+            }
+            DrawFPS(10, 10);
         }
 
         player->Draw();
@@ -61,7 +73,6 @@ int main(int argc, char* argv[])
         EndDrawing();
         //----------------------------------------------------------------------------------
     }
-
     // De-Initialization
     //--------------------------------------------------------------------------------------   
     CloseWindow();        // Close window and OpenGL context

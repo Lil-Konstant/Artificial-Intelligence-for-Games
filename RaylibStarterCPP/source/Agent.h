@@ -11,6 +11,7 @@ class Agent
 {
 public:
 	Grid* m_grid;
+	std::vector<Cell*> m_path;
 
 	std::vector<Behaviour*> m_behaviourList;
 
@@ -21,8 +22,8 @@ public:
 	Agent* m_target = nullptr;
 	float m_unitCount = 0;
 
-	float m_frictionModifier = 0.98;
-	float m_maxSpeed = 150;
+	float m_frictionModifier = 0.99;
+	float m_maxSpeed = 50;
 
 	Agent(Grid* grid);
 	virtual ~Agent();

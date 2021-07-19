@@ -11,7 +11,7 @@ public:
     EnemyAgent(Agent* target, Grid* grid);
     virtual ~EnemyAgent();
 
-    virtual void Update(float deltaTime);
+    void Update(float deltaTime) override;
     void Draw() override;
 
     // Root node of decision tree, checked every update and recurses down linked decision branches
