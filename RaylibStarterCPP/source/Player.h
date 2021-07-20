@@ -1,6 +1,5 @@
 #pragma once
 #include "Agent.h"
-#include "MouseFollowBehaviour.h"
 
 class Player :
     public Agent
@@ -9,13 +8,19 @@ public:
 	Player(Grid* grid);
 	virtual ~Player();
 
+	// For unit traversal
+	static Player* m_leader;
+	static std::vector<Player*> m_playerUnits;
+
 	void Update(float deltaTime) override;
 	void Draw() override;
 
-	bool Seek(Cell* target);
-	bool Arrive(Cell* target);
+	bool SeekBehaviour(Cell* target);
+	bool ArrivalBehaviour(Cell* target);
+	bool CohesionBehaviour() override;
+	bool SeparationBehaviour() override;
 
-	MouseFollowBehaviour* mouseFollowBehaviour;
+	void AddUnit() override;
 
 	float m_arrivalRadius = 150;
 };

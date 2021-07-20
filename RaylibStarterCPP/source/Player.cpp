@@ -1,9 +1,22 @@
 #include "Player.h"
 
+// Initialise the static leader pointer as null
+Player* Player::m_leader = nullptr;
+// Initialise the static unit vector as null
+std::vector<Player*> Player::m_playerUnits = std::vector<Player*>();
+
+
 // Construct the player with mouse follow behaviour, and set the target to the players starting position
 Player::Player(Grid* grid) : Agent(grid)
 {
+	// If this is the first player agent being created, make it the leader and add control behaviour
+	if (Player::m_leader == nullptr)
+	{
+		m_leader = this;
+	}
+
 	m_position = Vec3(GetScreenWidth() / 2, GetScreenHeight() / 2, 0);
+	m_playerUnits.push_back(this);
 }
 
 Player::~Player()
@@ -33,7 +46,7 @@ void Player::Update(float deltaTime)
 		if (m_path.size() == 1)
 		{
 			// If the front cell has now been reached, pop it off the path list
-			if (Arrive(m_path.front()))
+			if (ArrivalBehaviour(m_path.front()))
 			{
 				m_path.erase(m_path.begin());
 			}
@@ -42,11 +55,18 @@ void Player::Update(float deltaTime)
 		else
 		{
 			// If the front cell has now been reached, pop it off the path list
-			if (Seek(m_path.front()))
+			if (SeekBehaviour(m_path.front()))
 			{
 				m_path.erase(m_path.begin());
 			}
 		}
+	}
+
+	// If the unit we're updating isn't the leader, then calculate the cohesion and separation for flocking
+	if (this != m_leader)
+	{
+		SeparationBehaviour();
+		CohesionBehaviour();
 	}
 
 	// Add Force multiplied by delta time to Velocity, truncate with the max speed to not over speed
@@ -57,7 +77,7 @@ void Player::Update(float deltaTime)
 	m_velocity = m_velocity * m_frictionModifier;
 }
 
-bool Player::Seek(Cell* target)
+bool Player::SeekBehaviour(Cell* target)
 {
 	// Calculate a vector pointing from this agent to the target agent
 	Vec3 desiredVelocity = target->m_position - m_position;
@@ -73,12 +93,12 @@ bool Player::Seek(Cell* target)
 	{
 		desiredVelocity = desiredVelocity.GetNormalised() * m_maxSpeed;
 		// Add the steering force to this agents current force and return false as we are yet to reach the front cell in the path
-		m_force = m_force + (desiredVelocity - m_velocity);
+		AddForce(desiredVelocity - m_velocity);
 		return false;
 	}
 }
 
-bool Player::Arrive(Cell* target)
+bool Player::ArrivalBehaviour(Cell* target)
 {
 	// Seek towards the current target
 	Vec3 desiredVelocity = target->m_position - m_position;
@@ -92,7 +112,7 @@ bool Player::Arrive(Cell* target)
 	// If the target is within the arrival radius, scale the velocity down by the distance
 	else if (distanceToTarget < m_arrivalRadius)
 	{
-		desiredVelocity = desiredVelocity.GetNormalised() * m_maxSpeed * ((distanceToTarget * 3) / m_arrivalRadius);
+		desiredVelocity = desiredVelocity.GetNormalised() * m_maxSpeed * ((distanceToTarget * 2) / m_arrivalRadius);
 	}
 	// Other wise the velocity is the normal seek velocity
 	else
@@ -101,12 +121,68 @@ bool Player::Arrive(Cell* target)
 	}
 
 	// Add the steering force to this agents current force and return false as we are yet to reach the front cell in the path
-	m_force = m_force + (desiredVelocity - m_velocity);
+	AddForce(desiredVelocity - m_velocity);
 	return false;
+}
+
+bool Player::CohesionBehaviour()
+{
+	Vec3 leaderDisplacement = m_leader->m_position - m_position;
+	Vec3 steeringForce = leaderDisplacement - m_velocity;
+	AddForce(steeringForce * m_cohesionForce);
+
+	return true;
+}
+
+bool Player::SeparationBehaviour()
+{
+	Vec3 averageForce = Vec3(0, 0, 0);
+
+	for (auto unit : m_playerUnits)
+	{
+		if (unit != this)
+		{
+			// Calculate the vector pointing from the unit to this
+			Vec3 displacementVec = m_position - unit->m_position;
+			float distance = displacementVec.Magnitude();
+			
+			// If the vector is non-zero, normalise it and scale it by the repulsion factor
+			if (distance != 0)
+			{
+				Vec3 repulsionForce = displacementVec.GetNormalised() * m_separationForce;
+				repulsionForce = repulsionForce / (distance);
+				// Add this neighbours repulsion force to the running force total
+				averageForce = averageForce + repulsionForce;
+			}
+			else
+				return true;
+		}
+	}
+
+	AddForce(averageForce * m_cohesionForce);
+	return true;
+}
+
+// Adds a new player unit into the playerUnits vector
+void Player::AddUnit()
+{
+	Player* newUnit = new Player(m_grid);
+	// Spawn the new unit at a random position near the leader
+	newUnit->m_position = m_leader->m_position + Vec3(rand() % 50, rand() % 50, 0) - Vec3(rand() % 50, rand() % 50, 0);
 }
 
 // Draw the player as a polygon and the mouse follow target
 void Player::Draw()
 {
-	DrawPoly({ m_position.x, m_position.y }, 6, 10, 0, PURPLE);
+	if (this == m_leader)
+	{
+		DrawPoly({ m_position.x, m_position.y }, 6, 10, 0, YELLOW);
+		DrawPolyLines({ m_position.x, m_position.y }, 6, 10, 0, BLACK);
+	}
+		
+	else
+	{
+		DrawPoly({ m_position.x, m_position.y }, 6, 10, 0, PURPLE);
+		DrawPolyLines({ m_position.x, m_position.y }, 6, 10, 0, BLACK);
+	}
 }

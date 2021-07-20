@@ -24,7 +24,6 @@
     <ClCompile Include="source\Grid.cpp" />
     <ClCompile Include="source\main.cpp" />
     <ClCompile Include="source\MathsClasses.cpp" />
-    <ClCompile Include="source\MouseFollowBehaviour.cpp" />
     <ClCompile Include="source\Player.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -36,7 +35,6 @@
     <ClInclude Include="source\EnemyAgent.h" />
     <ClInclude Include="source\Grid.h" />
     <ClInclude Include="source\MathsClasses.h" />
-    <ClInclude Include="source\MouseFollowBehaviour.h" />
     <ClInclude Include="source\Player.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

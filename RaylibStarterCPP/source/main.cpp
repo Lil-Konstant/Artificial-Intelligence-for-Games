@@ -10,15 +10,25 @@ int main(int argc, char* argv[])
 {
     // Initialization
     //--------------------------------------------------------------------------------------
+    bool debugMode = true;
     int screenSize = 1000;
     InitWindow(screenSize, screenSize, "AI Demonstration - Ronan Richardson s210424");
+    SetTargetFPS(60);
+
+    srand(time(nullptr));
 
     Grid* grid = new Grid();
-    Player* player = new Player(grid);
-    EnemyAgent* enemy = new EnemyAgent(player, grid);
-    bool debugMode = true;
-    
-    SetTargetFPS(60);
+    Player* leader = new Player(grid);
+    Vec3 position = Vec3(screenSize / 2 + (rand() % 100), screenSize / 2 + (rand() % 100), 0);
+    leader->m_position = position;
+    EnemyAgent* enemy = new EnemyAgent(leader, grid);
+    for (int i = 0; i < 10; i++)
+    {
+        Player* unit = new Player(grid);
+        position = Vec3(screenSize / 2 + (rand() % 100), screenSize / 2 + (rand() % 100), 0);
+        unit->m_position = position;
+    }
+
     //--------------------------------------------------------------------------------------
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
@@ -26,9 +36,10 @@ int main(int argc, char* argv[])
         // Update
         //----------------------------------------------------------------------------------
         float deltaTime = GetFrameTime();
-        
-        // Update the players position with inputs and then get their current cell
-        player->Update(deltaTime);
+
+        // Update the forces on each of the player units this frame
+        for (auto unit : leader->m_playerUnits)
+            unit->Update(deltaTime);
         // Update the enemy's position with their decision tree
         enemy->Update(deltaTime);
 
@@ -40,11 +51,17 @@ int main(int argc, char* argv[])
 
             cell->m_traversable = !cell->m_traversable;
         }
+        // If left clicking, spawn a new unit
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            leader->AddUnit();
+        }
         // Toggle debug mode
         if (IsKeyPressed(KEY_SPACE))
         {
             debugMode = !debugMode;
         }
+
         //----------------------------------------------------------------------------------
 
         // Draw
@@ -56,18 +73,19 @@ int main(int argc, char* argv[])
         if (debugMode)
         {
             grid->Draw();
-            player->m_grid->getCell(player->m_position)->Draw(true);
-            for (int i = 0; i < player->m_path.size(); i++)
+            leader->m_grid->getCell(leader->m_position)->Draw(true);
+            for (int i = 0; i < leader->m_path.size(); i++)
             {
-                if (i + 1 < player->m_path.size())
-                    player->m_path[i]->Draw(true, player->m_path[i + 1]);
+                if (i + 1 < leader->m_path.size())
+                    leader->m_path[i]->Draw(true, leader->m_path[i + 1]);
                 else
-                    player->m_path[i]->Draw(true, player->m_path[i]);
+                    leader->m_path[i]->Draw(true, leader->m_path[i]);
             }
             DrawFPS(10, 10);
         }
 
-        player->Draw();
+        for (auto unit : leader->m_playerUnits)
+            unit->Draw();
         enemy->Draw();
 
         EndDrawing();

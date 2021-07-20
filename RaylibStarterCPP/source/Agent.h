@@ -22,18 +22,26 @@ public:
 	Agent* m_target = nullptr;
 	float m_unitCount = 0;
 
-	float m_frictionModifier = 0.99;
-	float m_maxSpeed = 50;
-
 	Agent(Grid* grid);
 	virtual ~Agent();
 
+protected:
 	virtual void Update(float deltaTime);
 	virtual void Draw();
 
-	// virtual void AddUnit() { unitcount++, new unit }
-
-protected:
 	void AddBehaviour(Behaviour* behaviour);
+	// Behaviours for keeping the agent's army together
+	virtual bool CohesionBehaviour() = 0;
+	virtual bool SeparationBehaviour() = 0;
+	
+	virtual void AddUnit() = 0;
+	//DeleteUnit()
+	
+	void AddForce(Vec3 force) { m_force = force + m_force; }
 	Vec3 Truncate(Vec3 vector, float truncateMax);
+
+	float m_frictionModifier = 0.99;
+	float m_maxSpeed = 50;
+	float m_cohesionForce = 5;
+	float m_separationForce = 200;
 };

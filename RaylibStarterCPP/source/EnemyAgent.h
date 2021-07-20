@@ -14,6 +14,11 @@ public:
     void Update(float deltaTime) override;
     void Draw() override;
 
+    bool CohesionBehaviour() override;
+    bool SeparationBehaviour() override;
+
+    void AddUnit() override;
+
     // Root node of decision tree, checked every update and recurses down linked decision branches
     TrueFalseDecision* m_rootDecision;
 
