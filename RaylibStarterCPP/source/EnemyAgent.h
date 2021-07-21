@@ -8,11 +8,12 @@ class EnemyAgent :
     public Agent
 {
 public:
-    EnemyAgent(Agent* target, Grid* grid);
+    EnemyAgent(Agent* target, Grid* grid, float radius);
     virtual ~EnemyAgent();
 
     void Update(float deltaTime) override;
     void Draw() override;
+    bool TryCollision(GameObject* other) override { return true; }
 
     bool CohesionBehaviour() override;
     bool SeparationBehaviour() override;

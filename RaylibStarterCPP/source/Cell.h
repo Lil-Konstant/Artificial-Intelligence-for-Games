@@ -2,6 +2,7 @@
 #include "raylib.h"
 #include "MathsClasses.h"
 #include "Edge.h"
+#include "Resource.h"
 #include <vector>
 #include <iostream>
 
@@ -49,12 +50,16 @@ public:
 					DrawLine(lineStart.x, lineStart.y, lineEnd.x, lineEnd.y, DARKGRAY);
 				}
 			}
+			if (m_resource != nullptr)
+				m_resource->Draw();
 			break;
 		}
 	}
 
 	Vec3 m_position = Vec3(0, 0, 0);
 	std::vector<Edge> m_edges;
+
+	Resource* m_resource = nullptr;
 
 	// Used in A* pathfinding
 	float fScore = 0;

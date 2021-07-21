@@ -7,7 +7,7 @@ std::vector<Player*> Player::m_playerUnits = std::vector<Player*>();
 
 
 // Construct the player with mouse follow behaviour, and set the target to the players starting position
-Player::Player(Grid* grid) : Agent(grid)
+Player::Player(Grid* grid, float radius) : Agent(grid, radius)
 {
 	// If this is the first player agent being created, make it the leader and add control behaviour
 	if (Player::m_leader == nullptr)
@@ -26,6 +26,21 @@ Player::~Player()
 
 void Player::Update(float deltaTime)
 {
+	// Get the cell this player unit is currently in	
+	m_currentCell = m_grid->getCell(m_position);
+
+	// If there is a resource in this cell
+	if (m_currentCell->m_resource != nullptr)
+	{
+		//Check for collisions with resource nodes within this cell
+		if (m_currentCell->m_resource->TryCollision(this))
+		{
+			AddUnit();
+			delete m_currentCell->m_resource;
+			m_currentCell->m_resource = nullptr;
+		}
+	}
+
 	// Reset the force for this frame to 0
 	m_force = Vec3(0, 0, 0);
 
@@ -150,7 +165,7 @@ bool Player::SeparationBehaviour()
 			if (distance != 0)
 			{
 				Vec3 repulsionForce = displacementVec.GetNormalised() * m_separationForce;
-				repulsionForce = repulsionForce / (distance);
+				repulsionForce = repulsionForce / (distance - m_radius);
 				// Add this neighbours repulsion force to the running force total
 				averageForce = averageForce + repulsionForce;
 			}
@@ -166,7 +181,7 @@ bool Player::SeparationBehaviour()
 // Adds a new player unit into the playerUnits vector
 void Player::AddUnit()
 {
-	Player* newUnit = new Player(m_grid);
+	Player* newUnit = new Player(m_grid, m_radius);
 	// Spawn the new unit at a random position near the leader
 	newUnit->m_position = m_leader->m_position + Vec3(rand() % 50, rand() % 50, 0) - Vec3(rand() % 50, rand() % 50, 0);
 }
@@ -176,13 +191,13 @@ void Player::Draw()
 {
 	if (this == m_leader)
 	{
-		DrawPoly({ m_position.x, m_position.y }, 6, 10, 0, YELLOW);
-		DrawPolyLines({ m_position.x, m_position.y }, 6, 10, 0, BLACK);
+		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, YELLOW);
+		DrawPolyLines({ m_position.x, m_position.y }, 6, m_radius, 0, BLACK);
 	}
 		
 	else
 	{
-		DrawPoly({ m_position.x, m_position.y }, 6, 10, 0, PURPLE);
-		DrawPolyLines({ m_position.x, m_position.y }, 6, 10, 0, BLACK);
+		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, PURPLE);
+		DrawPolyLines({ m_position.x, m_position.y }, 6, m_radius, 0, BLACK);
 	}
 }

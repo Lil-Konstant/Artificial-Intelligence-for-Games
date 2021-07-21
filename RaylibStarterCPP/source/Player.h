@@ -5,7 +5,7 @@ class Player :
     public Agent
 {
 public:
-	Player(Grid* grid);
+	Player(Grid* grid, float radius);
 	virtual ~Player();
 
 	// For unit traversal
@@ -14,6 +14,7 @@ public:
 
 	void Update(float deltaTime) override;
 	void Draw() override;
+	bool TryCollision(GameObject* other) override { return true; }
 
 	bool SeekBehaviour(Cell* target);
 	bool ArrivalBehaviour(Cell* target);

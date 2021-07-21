@@ -1,6 +1,6 @@
 #include "EnemyAgent.h"
 
-EnemyAgent::EnemyAgent(Agent* target, Grid* grid) : Agent(grid)
+EnemyAgent::EnemyAgent(Agent* target, Grid* grid, float radius) : Agent(grid, radius)
 {
 	m_position = Vec3(GetScreenWidth() / 3, GetScreenHeight() / 3, 0);
 	m_target = target;
@@ -70,5 +70,5 @@ void EnemyAgent::AddUnit()
 
 void EnemyAgent::Draw()
 {
-	DrawPoly({ m_position.x, m_position.y }, 3, 10, 0, RED);
+	DrawPoly({ m_position.x, m_position.y }, 3, m_radius, 0, RED);
 }

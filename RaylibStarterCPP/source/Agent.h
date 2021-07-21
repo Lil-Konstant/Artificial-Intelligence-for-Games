@@ -1,41 +1,41 @@
 #pragma once
-#include "raylib.h"
-#include "MathsClasses.h"
+#include "GameObject.h"
 #include "Grid.h"
 #include <vector>
 
 using namespace MathsClasses;
 
 class Behaviour;
-class Agent
+class Agent : public GameObject
 {
 public:
-	Grid* m_grid;
+	Agent(Grid* grid, float radius) : GameObject(radius), m_grid(grid) {};
+	virtual ~Agent();
+
 	std::vector<Cell*> m_path;
 
 	std::vector<Behaviour*> m_behaviourList;
 
-	Vec3 m_position = Vec3(0, 0, 0);
 	Vec3 m_velocity = Vec3(0, 0, 0);
 	Vec3 m_force = Vec3(0, 0, 0);
+	Grid* m_grid;
 
 	Agent* m_target = nullptr;
 	float m_unitCount = 0;
 
-	Agent(Grid* grid);
-	virtual ~Agent();
+	virtual void AddUnit() = 0;
+	//DeleteUnit()
 
 protected:
-	virtual void Update(float deltaTime);
-	virtual void Draw();
+	virtual void Update(float deltaTime) = 0;
+	virtual void Draw() = 0;
+	virtual bool TryCollision(GameObject* other) = 0;
 
 	void AddBehaviour(Behaviour* behaviour);
+	
 	// Behaviours for keeping the agent's army together
 	virtual bool CohesionBehaviour() = 0;
 	virtual bool SeparationBehaviour() = 0;
-	
-	virtual void AddUnit() = 0;
-	//DeleteUnit()
 	
 	void AddForce(Vec3 force) { m_force = force + m_force; }
 	Vec3 Truncate(Vec3 vector, float truncateMax);
@@ -44,4 +44,6 @@ protected:
 	float m_maxSpeed = 50;
 	float m_cohesionForce = 5;
 	float m_separationForce = 200;
+
+	Cell* m_currentCell = nullptr;
 };

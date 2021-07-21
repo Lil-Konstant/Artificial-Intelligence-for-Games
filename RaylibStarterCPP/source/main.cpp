@@ -12,22 +12,35 @@ int main(int argc, char* argv[])
     //--------------------------------------------------------------------------------------
     bool debugMode = true;
     int screenSize = 1000;
+    
     InitWindow(screenSize, screenSize, "AI Demonstration - Ronan Richardson s210424");
     SetTargetFPS(60);
 
     srand(time(nullptr));
 
     Grid* grid = new Grid();
-    Player* leader = new Player(grid);
+    
+    // Create the leader unit and add 10 units to the army
+    Player* leader = new Player(grid, 10);
     Vec3 position = Vec3(screenSize / 2 + (rand() % 100), screenSize / 2 + (rand() % 100), 0);
     leader->m_position = position;
-    EnemyAgent* enemy = new EnemyAgent(leader, grid);
     for (int i = 0; i < 10; i++)
     {
-        Player* unit = new Player(grid);
+        Player* unit = new Player(grid, 10);
         position = Vec3(screenSize / 2 + (rand() % 100), screenSize / 2 + (rand() % 100), 0);
         unit->m_position = position;
     }
+
+    // Create the resource nodes for the map and add them to their cells resource lists
+    for (int i = 0; i < 10; i++)
+    {
+        Resource* resource = new Resource(10);
+        resource->m_position = Vec3(rand() % screenSize, rand() % screenSize, 0);
+        grid->getCell(resource->m_position)->m_resource = resource;
+    }
+
+    // Create the enemy unit
+    EnemyAgent* enemy = new EnemyAgent(leader, grid, 10);
 
     //--------------------------------------------------------------------------------------
     // Main game loop
