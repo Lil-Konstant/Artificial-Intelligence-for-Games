@@ -1,6 +1,3 @@
-#include "raylib.h"
-#include "MathsClasses.h"
-#include "Grid.h"
 #include "Player.h"
 #include "EnemyAgent.h"
 
@@ -15,19 +12,20 @@ int main(int argc, char* argv[])
     
     InitWindow(screenSize, screenSize, "AI Demonstration - Ronan Richardson s210424");
     SetTargetFPS(60);
-
     srand(time(nullptr));
 
     Grid* grid = new Grid();
     
-    // Create the leader unit and add 10 units to the army
+    // Create the leader unit, initialise it's starting position and reserve 100 spaces in the units array
     Player* leader = new Player(grid, 10);
-    Vec3 position = Vec3(screenSize / 2 + (rand() % 100), screenSize / 2 + (rand() % 100), 0);
-    leader->m_position = position;
-    for (int i = 0; i < 10; i++)
+    leader->m_position = Vec3(screenSize / 2 + (rand() % 100), screenSize / 2 + (rand() % 100), 0);;
+    leader->m_playerUnits.reserve(100);
+    
+    // Initialise an army of 10 units (including the leader)
+    for (int i = 0; i < 1; i++)
     {
         Player* unit = new Player(grid, 10);
-        position = Vec3(screenSize / 2 + (rand() % 100), screenSize / 2 + (rand() % 100), 0);
+        Vec3 position = Vec3(leader->m_position.x + (rand() % 100), leader->m_position.y + (rand() % 100), 0);
         unit->m_position = position;
     }
 
@@ -39,8 +37,10 @@ int main(int argc, char* argv[])
         grid->getCell(resource->m_position)->m_resource = resource;
     }
 
-    // Create the enemy unit
-    EnemyAgent* enemy = new EnemyAgent(leader, grid, 10);
+    // Create the enemy unit, initialise it's starting position and reserve 100 spaces in the units array
+    EnemyAgent* enemyLeader = new EnemyAgent(leader, grid, 10);
+    enemyLeader->m_position = Vec3(GetScreenWidth() / 3, GetScreenHeight() / 3, 0);
+    enemyLeader->m_enemyUnits.reserve(100);
 
     //--------------------------------------------------------------------------------------
     // Main game loop
@@ -53,8 +53,9 @@ int main(int argc, char* argv[])
         // Update the forces on each of the player units this frame
         for (auto unit : leader->m_playerUnits)
             unit->Update(deltaTime);
+        
         // Update the enemy's position with their decision tree
-        enemy->Update(deltaTime);
+        enemyLeader->Update(deltaTime);
 
         // Paint the cell as untraversable
         if (IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON))
@@ -64,11 +65,13 @@ int main(int argc, char* argv[])
 
             cell->m_traversable = !cell->m_traversable;
         }
+        
         // If left clicking, spawn a new unit
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             leader->AddUnit();
         }
+        
         // Toggle debug mode
         if (IsKeyPressed(KEY_SPACE))
         {
@@ -99,7 +102,7 @@ int main(int argc, char* argv[])
 
         for (auto unit : leader->m_playerUnits)
             unit->Draw();
-        enemy->Draw();
+        enemyLeader->Draw();
 
         EndDrawing();
         //----------------------------------------------------------------------------------

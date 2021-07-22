@@ -15,7 +15,7 @@ Player::Player(Grid* grid, float radius) : Agent(grid, radius)
 		m_leader = this;
 	}
 
-	m_position = Vec3(GetScreenWidth() / 2, GetScreenHeight() / 2, 0);
+	m_position = Vec3(m_leader->m_position.x + (rand() % 100), m_leader->m_position.y + (rand() % 100), 0);
 	m_playerUnits.push_back(this);
 }
 
@@ -48,10 +48,9 @@ void Player::Update(float deltaTime)
 	if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
 	{
 		Vec3 mousePosition = Vec3(GetMouseX(), GetMouseY(), 0);
-		Cell* playerCell = m_grid->getCell(m_position);
 		Cell* destinationCell = m_grid->getCell(mousePosition);
 
-		m_path = m_grid->aStar(playerCell, destinationCell);
+		m_path = m_grid->aStar(m_currentCell, destinationCell);
 	}
 
 	// If there is a path for the player agent to follow

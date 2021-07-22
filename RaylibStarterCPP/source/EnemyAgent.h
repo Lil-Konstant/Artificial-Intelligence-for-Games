@@ -20,6 +20,10 @@ public:
 
     void AddUnit() override;
 
+    // For unit traversal
+    static EnemyAgent* m_leader;
+    static std::vector<EnemyAgent*> m_enemyUnits;
+
     // Root node of decision tree, checked every update and recurses down linked decision branches
     TrueFalseDecision* m_rootDecision;
 

@@ -1,8 +1,21 @@
 #include "EnemyAgent.h"
 
+// Initialise the static leader pointer as null
+EnemyAgent* EnemyAgent::m_leader = nullptr;
+// Initialise the static unit vector as null
+std::vector<EnemyAgent*> EnemyAgent::m_enemyUnits = std::vector<EnemyAgent*>();
+
 EnemyAgent::EnemyAgent(Agent* target, Grid* grid, float radius) : Agent(grid, radius)
 {
-	m_position = Vec3(GetScreenWidth() / 3, GetScreenHeight() / 3, 0);
+	// Initialise the first enemy agent as the enemy leader
+	if (EnemyAgent::m_leader == nullptr)
+	{
+		m_leader = this;
+	}
+
+	m_position = Vec3(m_leader->m_position.x + (rand() % 100), m_leader->m_position.y + (rand() % 100), 0);
+	m_enemyUnits.push_back(this);
+
 	m_target = target;
 
 	// DEBUGGING
@@ -21,6 +34,21 @@ EnemyAgent::~EnemyAgent()
 
 void EnemyAgent::Update(float deltaTime)
 {
+	// Get the cell this player unit is currently in	
+	m_currentCell = m_grid->getCell(m_position);
+
+	// If there is a resource in this cell
+	if (m_currentCell->m_resource != nullptr)
+	{
+		//Check for collisions with resource nodes within this cell
+		if (m_currentCell->m_resource->TryCollision(this))
+		{
+			AddUnit();
+			delete m_currentCell->m_resource;
+			m_currentCell->m_resource = nullptr;
+		}
+	}
+
 	// Traverse the decision tree every frame (or every timer)
 	m_rootDecision->makeDecision(this);
 }
@@ -65,7 +93,9 @@ bool EnemyAgent::SeparationBehaviour()
 
 void EnemyAgent::AddUnit()
 {
-
+	EnemyAgent* newUnit = new EnemyAgent(m_target, m_grid, m_radius);
+	// Spawn the new unit at a random position near the leader
+	newUnit->m_position = m_leader->m_position + Vec3(rand() % 50, rand() % 50, 0) - Vec3(rand() % 50, rand() % 50, 0);
 }
 
 void EnemyAgent::Draw()

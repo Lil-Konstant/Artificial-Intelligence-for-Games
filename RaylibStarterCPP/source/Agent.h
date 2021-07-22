@@ -13,12 +13,12 @@ public:
 	virtual ~Agent();
 
 	std::vector<Cell*> m_path;
+	Grid* m_grid;
 
 	std::vector<Behaviour*> m_behaviourList;
 
 	Vec3 m_velocity = Vec3(0, 0, 0);
 	Vec3 m_force = Vec3(0, 0, 0);
-	Grid* m_grid;
 
 	Agent* m_target = nullptr;
 	float m_unitCount = 0;
