@@ -26,6 +26,8 @@ public:
 	virtual void AddUnit() = 0;
 	//DeleteUnit()
 
+	Cell* m_currentCell = nullptr;
+
 protected:
 	virtual void Update(float deltaTime) = 0;
 	virtual void Draw() = 0;
@@ -34,6 +36,8 @@ protected:
 	void AddBehaviour(Behaviour* behaviour);
 	
 	// Behaviours for keeping the agent's army together
+	bool SeekBehaviour(Cell* target);
+	bool ArrivalBehaviour(Cell* target);
 	virtual bool CohesionBehaviour() = 0;
 	virtual bool SeparationBehaviour() = 0;
 	
@@ -43,7 +47,6 @@ protected:
 	float m_frictionModifier = 0.99;
 	float m_maxSpeed = 50;
 	float m_cohesionForce = 5;
-	float m_separationForce = 200;
-
-	Cell* m_currentCell = nullptr;
+	float m_separationForce = 30;
+	float m_arrivalRadius = 150;
 };

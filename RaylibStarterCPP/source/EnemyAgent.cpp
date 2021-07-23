@@ -13,16 +13,18 @@ EnemyAgent::EnemyAgent(Agent* target, Grid* grid, float radius) : Agent(grid, ra
 		m_leader = this;
 	}
 
+	// Spawn this unit within 100 units of the enemy leader
 	m_position = Vec3(m_leader->m_position.x + (rand() % 100), m_leader->m_position.y + (rand() % 100), 0);
 	m_enemyUnits.push_back(this);
 
+	// Set this AI's target to be the player leader
 	m_target = target;
 
 	// DEBUGGING
-	m_unitCount = -100;
+	m_unitCount = 100;
 
 	// Construct decision tree for the enemy agent
-	TrueFalseDecision* playerInteractionMode = new TrueFalseDecision(new PursureAction(), new FleeAction(), new IsStronger());
+	TrueFalseDecision* playerInteractionMode = new TrueFalseDecision(new PursueAction(), new FleeAction(), new IsStronger());
 	TrueFalseDecision* npcRoamMode = new TrueFalseDecision(new SearchAction(), new GatherAction(), new IsStronger());
 	m_rootDecision = new TrueFalseDecision(playerInteractionMode, npcRoamMode, new InRange());
 }
@@ -50,44 +52,89 @@ void EnemyAgent::Update(float deltaTime)
 	}
 
 	// Traverse the decision tree every frame (or every timer)
-	m_rootDecision->makeDecision(this);
+	decisionTimer -= deltaTime;
+	if (decisionTimer <= 0)
+	{
+		m_rootDecision->makeDecision(this);
+		decisionTimer = 1;
+	}
+	
+	// Reset the force for this frame to 0
+	m_force = Vec3(0, 0, 0);
+
+	// If there is a path for the player agent to follow
+	if (m_path.size() > 0)
+	{
+		// If the front cell is the last cell in the path, use arrival behaviour
+		if (m_path.size() == 1)
+		{
+			// If the front cell has now been reached, pop it off the path list
+			if (ArrivalBehaviour(m_path.front()))
+			{
+				m_path.erase(m_path.begin());
+			}
+		}
+		// Otherwise seek towards the front cell in the path list
+		else
+		{
+			// If the front cell has now been reached, pop it off the path list
+			if (SeekBehaviour(m_path.front()))
+			{
+				m_path.erase(m_path.begin());
+			}
+		}
+	}
+
+	// If the unit we're updating isn't the leader, then calculate the cohesion and separation for flocking
+	if (this != m_leader)
+	{
+		SeparationBehaviour();
+		CohesionBehaviour();
+	}
+
+	// Add Force multiplied by delta time to Velocity, truncate with the max speed to not over speed
+	m_velocity = Truncate(m_velocity + (m_force * deltaTime), m_maxSpeed);
+	// Add Velocity multiplied by delta time to Position
+	m_position = m_position + (m_velocity * deltaTime);
+	// Scale the velocity down according to the friction
+	m_velocity = m_velocity * m_frictionModifier;
 }
 
 bool EnemyAgent::CohesionBehaviour()
 {
-	//Vec3 leaderDisplacement = m_leader->m_position - m_position;
-	//Vec3 steeringForce = leaderDisplacement - m_velocity;
-	//AddForce(steeringForce * m_cohesionForce);
+	Vec3 leaderDisplacement = m_leader->m_position - m_position;
+	Vec3 steeringForce = leaderDisplacement - m_velocity;
+	AddForce(steeringForce * m_cohesionForce);
 
 	return true;
 }
 
 bool EnemyAgent::SeparationBehaviour()
 {
-	//Vec3 averageForce = Vec3(0, 0, 0);
+	Vec3 averageForce = Vec3(0, 0, 0);
 
-	//for (auto unit : m_playerUnits)
-	//{
-	//	if (unit != this)
-	//	{
-	//		// Calculate the vector pointing from the unit to this
-	//		Vec3 displacementVec = m_position - unit->m_position;
-	//		float distance = displacementVec.Magnitude();
+	for (auto unit : m_enemyUnits)
+	{
+		if (unit != this)
+		{
+			// Calculate the vector pointing from the unit to this
+			Vec3 displacementVec = m_position - unit->m_position;
+			float distance = displacementVec.Magnitude();
 
-	//		// If the vector is non-zero, normalise it and scale it by the repulsion factor
-	//		if (distance != 0)
-	//		{
-	//			Vec3 repulsionForce = displacementVec.GetNormalised() * m_separationForce;
-	//			repulsionForce = repulsionForce / (distance);
-	//			// Add this neighbours repulsion force to the running force total
-	//			averageForce = averageForce + repulsionForce;
-	//		}
-	//		else
-	//			return true;
-	//	}
-	//}
+			// If the vector is non-zero, normalise it and scale it by the repulsion factor
+			if (distance != 0)
+			{
+				Vec3 repulsionForce = displacementVec.GetNormalised() * m_separationForce;
+				repulsionForce = repulsionForce / (distance);
+				// Add this neighbours repulsion force to the running force total
+				averageForce = averageForce + repulsionForce;
+			}
+			else
+				return true;
+		}
+	}
 
-	//AddForce(averageForce * m_cohesionForce);
+	AddForce(averageForce * m_separationForce);
 	return true;
 }
 
@@ -100,5 +147,6 @@ void EnemyAgent::AddUnit()
 
 void EnemyAgent::Draw()
 {
-	DrawPoly({ m_position.x, m_position.y }, 3, m_radius, 0, RED);
+	DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, RED);
+	DrawPolyLines({ m_position.x, m_position.y }, 6, m_radius, 0, BLACK);
 }

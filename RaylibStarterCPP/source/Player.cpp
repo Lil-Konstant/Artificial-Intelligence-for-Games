@@ -51,6 +51,7 @@ void Player::Update(float deltaTime)
 		Cell* destinationCell = m_grid->getCell(mousePosition);
 
 		m_path = m_grid->aStar(m_currentCell, destinationCell);
+		m_path.erase(m_path.begin());
 	}
 
 	// If there is a path for the player agent to follow
@@ -91,54 +92,6 @@ void Player::Update(float deltaTime)
 	m_velocity = m_velocity * m_frictionModifier;
 }
 
-bool Player::SeekBehaviour(Cell* target)
-{
-	// Calculate a vector pointing from this agent to the target agent
-	Vec3 desiredVelocity = target->m_position - m_position;
-	float distanceToTarget = desiredVelocity.Magnitude();
-
-	// Distance is 0 so return true as we have reached the target cell
-	if (distanceToTarget < 10)
-	{
-		return true;
-	}
-	// As long as the distance is not 0, then normalise the vector and scale it by its move speed
-	else
-	{
-		desiredVelocity = desiredVelocity.GetNormalised() * m_maxSpeed;
-		// Add the steering force to this agents current force and return false as we are yet to reach the front cell in the path
-		AddForce(desiredVelocity - m_velocity);
-		return false;
-	}
-}
-
-bool Player::ArrivalBehaviour(Cell* target)
-{
-	// Seek towards the current target
-	Vec3 desiredVelocity = target->m_position - m_position;
-	float distanceToTarget = desiredVelocity.Magnitude();
-
-	// Distance is 0 so return true as we have reached the target cell
-	if (distanceToTarget < 1)
-	{
-		return true;
-	}
-	// If the target is within the arrival radius, scale the velocity down by the distance
-	else if (distanceToTarget < m_arrivalRadius)
-	{
-		desiredVelocity = desiredVelocity.GetNormalised() * m_maxSpeed * ((distanceToTarget * 2) / m_arrivalRadius);
-	}
-	// Other wise the velocity is the normal seek velocity
-	else
-	{
-		desiredVelocity = desiredVelocity.GetNormalised() * m_maxSpeed;
-	}
-
-	// Add the steering force to this agents current force and return false as we are yet to reach the front cell in the path
-	AddForce(desiredVelocity - m_velocity);
-	return false;
-}
-
 bool Player::CohesionBehaviour()
 {
 	Vec3 leaderDisplacement = m_leader->m_position - m_position;
@@ -164,7 +117,7 @@ bool Player::SeparationBehaviour()
 			if (distance != 0)
 			{
 				Vec3 repulsionForce = displacementVec.GetNormalised() * m_separationForce;
-				repulsionForce = repulsionForce / (distance - m_radius);
+				repulsionForce = repulsionForce / (distance);
 				// Add this neighbours repulsion force to the running force total
 				averageForce = averageForce + repulsionForce;
 			}
@@ -173,7 +126,7 @@ bool Player::SeparationBehaviour()
 		}
 	}
 
-	AddForce(averageForce * m_cohesionForce);
+	AddForce(averageForce * m_separationForce);
 	return true;
 }
 
@@ -189,14 +142,9 @@ void Player::AddUnit()
 void Player::Draw()
 {
 	if (this == m_leader)
-	{
 		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, YELLOW);
-		DrawPolyLines({ m_position.x, m_position.y }, 6, m_radius, 0, BLACK);
-	}
-		
 	else
-	{
 		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, PURPLE);
-		DrawPolyLines({ m_position.x, m_position.y }, 6, m_radius, 0, BLACK);
-	}
+	
+	DrawPolyLines({ m_position.x, m_position.y }, 6, m_radius, 0, BLACK);
 }

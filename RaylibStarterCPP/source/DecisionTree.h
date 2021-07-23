@@ -17,7 +17,7 @@ namespace DecisionTree
 		{
 			float distance = agent->m_position.Distance(agent->m_target->m_position);
 
-			return distance < 100;
+			return distance < 300;
 		}
 	};
 	
@@ -39,12 +39,23 @@ namespace DecisionTree
 	};
 
 	// Decision leaf node that executes the agents Pursue logic
-	class PursureAction : public Decision
+	class PursueAction : public Decision
 	{
 	public:
 		virtual void makeDecision(Agent* agent)
 		{
-			std::cout << "I AM PURSUING" << std::endl;
+			Cell* currentCell = agent->m_currentCell;
+			Cell* targetCell = agent->m_target->m_currentCell;
+
+			std::vector<Cell*> newPath = agent->m_grid->aStar(currentCell, targetCell);
+			std::vector<Cell*> pathMinusStart = newPath;
+			pathMinusStart.erase(pathMinusStart.begin());
+
+			// If the path to the target is different from the current path, update the current path
+			if (agent->m_path != newPath && agent->m_path != pathMinusStart)
+			{
+				agent->m_path = pathMinusStart;
+			}
 		}
 	};
 

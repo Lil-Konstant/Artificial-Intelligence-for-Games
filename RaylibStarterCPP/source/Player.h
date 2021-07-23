@@ -16,13 +16,9 @@ public:
 	void Draw() override;
 	bool TryCollision(GameObject* other) override { return true; }
 
-	bool SeekBehaviour(Cell* target);
-	bool ArrivalBehaviour(Cell* target);
 	bool CohesionBehaviour() override;
 	bool SeparationBehaviour() override;
 
 	void AddUnit() override;
-
-	float m_arrivalRadius = 150;
 };
 

@@ -54,8 +54,9 @@ int main(int argc, char* argv[])
         for (auto unit : leader->m_playerUnits)
             unit->Update(deltaTime);
         
-        // Update the enemy's position with their decision tree
-        enemyLeader->Update(deltaTime);
+        // Update the forces on each of the enemy units this frame
+        for (auto unit : enemyLeader->m_enemyUnits)
+            unit->Update(deltaTime);
 
         // Paint the cell as untraversable
         if (IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON))
@@ -72,6 +73,12 @@ int main(int argc, char* argv[])
             leader->AddUnit();
         }
         
+        // If shift is pressed, spawn an enemy unit
+        if (IsKeyPressed(KEY_LEFT_SHIFT))
+        {
+            enemyLeader->AddUnit();
+        }
+
         // Toggle debug mode
         if (IsKeyPressed(KEY_SPACE))
         {
@@ -90,6 +97,7 @@ int main(int argc, char* argv[])
         {
             grid->Draw();
             leader->m_grid->getCell(leader->m_position)->Draw(true);
+            enemyLeader->m_grid->getCell(enemyLeader->m_position)->Draw(true);
             for (int i = 0; i < leader->m_path.size(); i++)
             {
                 if (i + 1 < leader->m_path.size())
@@ -97,12 +105,22 @@ int main(int argc, char* argv[])
                 else
                     leader->m_path[i]->Draw(true, leader->m_path[i]);
             }
+            /*for (int i = 0; i < enemyLeader->m_path.size(); i++)
+            {
+                if (i + 1 < enemyLeader->m_path.size())
+                    enemyLeader->m_path[i]->Draw(true, enemyLeader->m_path[i + 1]);
+                else
+                    enemyLeader->m_path[i]->Draw(true, enemyLeader->m_path[i]);
+            }*/
             DrawFPS(10, 10);
         }
 
+        // Draw every unit in the player army
         for (auto unit : leader->m_playerUnits)
             unit->Draw();
-        enemyLeader->Draw();
+        // Draw every unit in the enemy army
+        for (auto unit : enemyLeader->m_enemyUnits)
+            unit->Draw();
 
         EndDrawing();
         //----------------------------------------------------------------------------------
