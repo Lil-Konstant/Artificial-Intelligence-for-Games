@@ -29,19 +29,23 @@ int main(int argc, char* argv[])
         unit->m_position = position;
     }
 
-    // Create the resource nodes for the map and add them to their cells resource lists
-    for (int i = 0; i < 10; i++)
-    {
-        Resource* resource = new Resource(10);
-        resource->m_position = Vec3(rand() % screenSize, rand() % screenSize, 0);
-        grid->getCell(resource->m_position)->m_resource = resource;
-    }
-
     // Create the enemy unit, initialise it's starting position and reserve 100 spaces in the units array
     EnemyAgent* enemyLeader = new EnemyAgent(leader, grid, 10);
     enemyLeader->m_position = Vec3(GetScreenWidth() / 3, GetScreenHeight() / 3, 0);
     enemyLeader->m_enemyUnits.reserve(100);
 
+    // Create the resource nodes for the map and add them to their cells resource lists
+    for (int i = 0; i < 10; i++)
+    {
+        Resource* resource = new Resource(10);
+        // Choose a random cell to place the resource at the centre of
+        Cell* startingCell = grid->getCell(Vec3(rand() % screenSize, rand() % screenSize, 0));
+        startingCell->m_resource = resource;
+        resource->m_position = startingCell->m_position;
+        // Add the resource to the agents shared resource list
+        enemyLeader->m_resourceList.push_back(resource);
+    }
+    
     //--------------------------------------------------------------------------------------
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
@@ -78,6 +82,12 @@ int main(int argc, char* argv[])
         {
             enemyLeader->AddUnit();
         }
+        
+        // If is pressed, swap unit strength
+        if (IsKeyPressed(KEY_Q))
+        {
+            enemyLeader->m_unitCount *= -1;
+        }
 
         // Toggle debug mode
         if (IsKeyPressed(KEY_SPACE))
@@ -105,13 +115,13 @@ int main(int argc, char* argv[])
                 else
                     leader->m_path[i]->Draw(true, leader->m_path[i]);
             }
-            /*for (int i = 0; i < enemyLeader->m_path.size(); i++)
+            for (int i = 0; i < enemyLeader->m_path.size(); i++)
             {
                 if (i + 1 < enemyLeader->m_path.size())
                     enemyLeader->m_path[i]->Draw(true, enemyLeader->m_path[i + 1]);
                 else
                     enemyLeader->m_path[i]->Draw(true, enemyLeader->m_path[i]);
-            }*/
+            }
             DrawFPS(10, 10);
         }
 

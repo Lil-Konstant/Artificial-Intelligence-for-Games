@@ -36,6 +36,8 @@ void Player::Update(float deltaTime)
 		if (m_currentCell->m_resource->TryCollision(this))
 		{
 			AddUnit();
+			// Remove this resource from the agents shared resource list
+			m_resourceList.erase(std::find(m_resourceList.begin(), m_resourceList.end(), m_currentCell->m_resource));
 			delete m_currentCell->m_resource;
 			m_currentCell->m_resource = nullptr;
 		}
@@ -51,7 +53,6 @@ void Player::Update(float deltaTime)
 		Cell* destinationCell = m_grid->getCell(mousePosition);
 
 		m_path = m_grid->aStar(m_currentCell, destinationCell);
-		m_path.erase(m_path.begin());
 	}
 
 	// If there is a path for the player agent to follow
@@ -69,6 +70,17 @@ void Player::Update(float deltaTime)
 		// Otherwise seek towards the front cell in the path list
 		else
 		{
+			// Some vector maths to stop agents from moving backwards if they are closer to their second path node
+			// Draw a vector from the first node to the second node
+			Vec3 nodeDisplacement = (m_path[1]->m_position - m_path[0]->m_position).GetNormalised();
+			Vec3 agentDisplacement = (m_position - m_path[0]->m_position).GetNormalised();
+			float angle = acos(nodeDisplacement.Dot(agentDisplacement));
+
+			if (angle < PI / 4)
+			{
+				m_path.erase(m_path.begin());
+			}
+
 			// If the front cell has now been reached, pop it off the path list
 			if (SeekBehaviour(m_path.front()))
 			{

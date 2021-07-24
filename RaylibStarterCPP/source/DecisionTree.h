@@ -17,7 +17,7 @@ namespace DecisionTree
 		{
 			float distance = agent->m_position.Distance(agent->m_target->m_position);
 
-			return distance < 300;
+			return distance < 50;
 		}
 	};
 	
@@ -49,12 +49,12 @@ namespace DecisionTree
 
 			std::vector<Cell*> newPath = agent->m_grid->aStar(currentCell, targetCell);
 			std::vector<Cell*> pathMinusStart = newPath;
-			pathMinusStart.erase(pathMinusStart.begin());
+			pathMinusStart.erase(pathMinusStart.begin());  
 
-			// If the path to the target is different from the current path, update the current path
+			// If the path to the new path is different from the current path, update the current path
 			if (agent->m_path != newPath && agent->m_path != pathMinusStart)
 			{
-				agent->m_path = pathMinusStart;
+				agent->m_path = newPath;
 			}
 		}
 	};
@@ -86,6 +86,36 @@ namespace DecisionTree
 		virtual void makeDecision(Agent* agent)
 		{
 			std::cout << "I AM GATHERING" << std::endl;
+			if (agent->m_resourceList.size() > 0)
+			{
+				Resource* closestResource = agent->m_resourceList.front();
+				float currentDistanceToClosest = closestResource->m_position.DistanceSqr(agent->m_position);
+
+				for (auto resource : agent->m_resourceList)
+				{
+					float potentialDistanceToClosest = resource->m_position.DistanceSqr(agent->m_position);
+					if (potentialDistanceToClosest < currentDistanceToClosest)
+					{
+						closestResource = resource;
+						currentDistanceToClosest = closestResource->m_position.DistanceSqr(agent->m_position);
+					}
+				}
+
+				Cell* closestResourceCell = agent->m_grid->getCell(closestResource->m_position);
+				std::vector<Cell*> newPath = agent->m_grid->aStar(agent->m_grid->getCell(agent->m_position), closestResourceCell);
+				std::vector<Cell*> pathMinusStart = newPath;
+				pathMinusStart.erase(pathMinusStart.begin());
+
+				// If the path to the new path is different from the current path, update the current path
+				if (agent->m_path != newPath && agent->m_path != pathMinusStart)
+				{
+					agent->m_path = newPath;
+				}
+			}
+			else
+			{
+				// there are no resources left to collect, so roam?
+			}
 		}
 	};
 

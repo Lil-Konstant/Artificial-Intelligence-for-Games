@@ -20,6 +20,7 @@ public:
 	Vec3 m_velocity = Vec3(0, 0, 0);
 	Vec3 m_force = Vec3(0, 0, 0);
 
+	static std::vector<Resource*> m_resourceList;
 	Agent* m_target = nullptr;
 	float m_unitCount = 0;
 

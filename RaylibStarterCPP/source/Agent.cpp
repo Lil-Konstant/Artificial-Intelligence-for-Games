@@ -1,6 +1,9 @@
 #include "Agent.h"
 #include "Behaviour.h"
 
+// Initialise the static resource list as null
+std::vector<Resource*> Agent::m_resourceList = std::vector<Resource*>();
+
 Agent::~Agent()
 {
 

@@ -27,7 +27,5 @@ public:
     // Root node of decision tree, checked every update and recurses down linked decision branches
     TrueFalseDecision* m_rootDecision;
     float decisionTimer = 1;
-
-    //list<ResourceNodes> resourceList;
 };
 
