@@ -27,6 +27,8 @@ public:
 	virtual void AddUnit() = 0;
 	//DeleteUnit()
 
+	float m_aggroRadius = 200;
+
 	Cell* m_currentCell = nullptr;
 
 protected:

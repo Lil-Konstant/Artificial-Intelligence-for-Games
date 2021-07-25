@@ -17,7 +17,7 @@ namespace DecisionTree
 		{
 			float distance = agent->m_position.Distance(agent->m_target->m_position);
 
-			return distance < 50;
+			return distance < agent->m_aggroRadius;
 		}
 	};
 	
@@ -44,6 +44,7 @@ namespace DecisionTree
 	public:
 		virtual void makeDecision(Agent* agent)
 		{
+			std::cout << "I AM PURSUING" << std::endl;
 			Cell* currentCell = agent->m_currentCell;
 			Cell* targetCell = agent->m_target->m_currentCell;
 
@@ -66,16 +67,82 @@ namespace DecisionTree
 		virtual void makeDecision(Agent* agent)
 		{
 			std::cout << "I AM FLEEING" << std::endl;
+
+			// Create a vector that points away from the target, to the edge of this agents flee radius
+			Vec3 fleeDirection = agent->m_position - agent->m_target->m_position;
+			fleeDirection = fleeDirection.GetNormalised() * agent->m_aggroRadius;
+			// Get the cell at this position for the agent to path to
+			Cell* fleeCell = agent->m_grid->getCell(agent->m_position + fleeDirection);
+
+			agent->m_path = agent->m_grid->aStar(agent->m_grid->getCell(agent->m_position), fleeCell);
 		}
 	};
 
 	// Decision leaf node that executes the agents Search logic
 	class SearchAction : public Decision
 	{
+	private:
+		Cell* m_currentWaypointCell = nullptr;
+
 	public:
 		virtual void makeDecision(Agent* agent)
 		{
 			std::cout << "I AM SEARCHING" << std::endl;
+
+			// If a search waypoint is yet to be set, determine which is closest and set it as the target waypoint
+			if (m_currentWaypointCell == nullptr)
+			{
+				// Find the waypoint closest to the agent, starting with the top left as the current best guess
+				m_currentWaypointCell = agent->m_grid->topLeftWaypoint;
+				float currentShortest = agent->m_position.DistanceSqr(m_currentWaypointCell->m_position);
+
+				// If the top right waypoint is closer
+				if (agent->m_position.DistanceSqr(agent->m_grid->topRightWaypoint->m_position) < currentShortest)
+				{
+					m_currentWaypointCell = agent->m_grid->topRightWaypoint;
+					currentShortest = agent->m_position.DistanceSqr(m_currentWaypointCell->m_position);
+				}
+				// If the bottom left waypoint is closer
+				if (agent->m_position.DistanceSqr(agent->m_grid->bottomLeftWaypoint->m_position) < currentShortest)
+				{
+					m_currentWaypointCell = agent->m_grid->bottomLeftWaypoint;
+					currentShortest = agent->m_position.DistanceSqr(m_currentWaypointCell->m_position);
+				}
+				// If the bottom right waypoint is closer
+				if (agent->m_position.DistanceSqr(agent->m_grid->bottomRightWaypoint->m_position) < currentShortest)
+				{
+					m_currentWaypointCell = agent->m_grid->bottomRightWaypoint;
+					currentShortest = agent->m_position.DistanceSqr(m_currentWaypointCell->m_position);
+				}
+			}
+
+			// If we are at the waypoint cell, update it to the appropriate next waypoint (rotating clockwise)
+			if (agent->m_grid->getCell(agent->m_position) == m_currentWaypointCell)
+			{
+				// If we have reached the top left waypoint, set our current waypoint to be the top right waypoint
+				if (m_currentWaypointCell == agent->m_grid->topLeftWaypoint)
+				{
+					m_currentWaypointCell = agent->m_grid->topRightWaypoint;
+				}
+				// If we have reached the top right waypoint, set our current waypoint to be the bottom right waypoint
+				else if (m_currentWaypointCell == agent->m_grid->topRightWaypoint)
+				{
+					m_currentWaypointCell = agent->m_grid->bottomRightWaypoint;
+				}
+				// If we have reached the bottom right waypoint, set our current waypoint to be the bottom left waypoint
+				else if (m_currentWaypointCell == agent->m_grid->bottomRightWaypoint)
+				{
+					m_currentWaypointCell = agent->m_grid->bottomLeftWaypoint;
+				}
+				// If we have reached the bottom left waypoint, set our current waypoint to be the top left waypoint
+				else if (m_currentWaypointCell == agent->m_grid->bottomLeftWaypoint)
+				{
+					m_currentWaypointCell = agent->m_grid->topLeftWaypoint;
+				}
+			}
+
+			// Set the agents path to be from itself to its current waypoint cell
+			agent->m_path = agent->m_grid->aStar(agent->m_grid->getCell(agent->m_position), m_currentWaypointCell);
 		}
 	};
 	
@@ -91,6 +158,7 @@ namespace DecisionTree
 				Resource* closestResource = agent->m_resourceList.front();
 				float currentDistanceToClosest = closestResource->m_position.DistanceSqr(agent->m_position);
 
+				// Find the closest resource node to the agent
 				for (auto resource : agent->m_resourceList)
 				{
 					float potentialDistanceToClosest = resource->m_position.DistanceSqr(agent->m_position);
@@ -101,6 +169,7 @@ namespace DecisionTree
 					}
 				}
 
+				// Pathfind towards the closest resource node
 				Cell* closestResourceCell = agent->m_grid->getCell(closestResource->m_position);
 				std::vector<Cell*> newPath = agent->m_grid->aStar(agent->m_grid->getCell(agent->m_position), closestResourceCell);
 				std::vector<Cell*> pathMinusStart = newPath;
