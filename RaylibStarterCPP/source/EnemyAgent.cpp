@@ -123,6 +123,22 @@ void EnemyAgent::AddUnit()
 void EnemyAgent::KillUnit()
 {
 	std::cout << "ENEMY DEAD LOL" << std::endl;
+
+	// If killing the last enemy in the enemy army, return player win state
+
+	// If killing the leader unit, replace it with the next in charge
+	if (this == m_leader)
+	{
+		// Repoint the enemy armies leader pointer to the next in charge
+
+
+		// Replace the player leaders target pointer with the new enemy leadeer
+		m_target->m_target = m_leader;
+	}
+
+	// Remove this unit from the enemyUnits list
+
+
 }
 
 // Finds the closest enemy agent in this army to the inputted agent

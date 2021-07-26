@@ -70,6 +70,7 @@ void Player::Update(float deltaTime)
 				m_attackTarget = nullptr;
 			}
 
+			// Reset the attack cooldown back to 1 second
 			m_attackCooldown = 1;
 		}
 
