@@ -14,11 +14,18 @@ public:
 
 	void Update(float deltaTime) override;
 	void Draw() override;
-	bool TryCollision(GameObject* other) override { return true; }
+	Agent* FindClosest(Agent* agent) override;
+
+	// Initialise this agents state as moving
+	static State m_state;
+	Agent* m_attackTarget = nullptr;
 
 	bool CohesionBehaviour() override;
 	bool SeparationBehaviour() override;
 
 	void AddUnit() override;
+	void KillUnit() override;
+
+	bool TryCollision(GameObject* other) override { return true; }
 };
 

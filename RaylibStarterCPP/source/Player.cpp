@@ -2,9 +2,10 @@
 
 // Initialise the static leader pointer as null
 Player* Player::m_leader = nullptr;
+// Initialise the static state as moving
+Agent::State Player::m_state = Agent::State::STATE_MOVE;
 // Initialise the static unit vector as null
 std::vector<Player*> Player::m_playerUnits = std::vector<Player*>();
-
 
 // Construct the player with mouse follow behaviour, and set the target to the players starting position
 Player::Player(Grid* grid, float radius) : Agent(grid, radius)
@@ -26,67 +27,53 @@ Player::~Player()
 
 void Player::Update(float deltaTime)
 {
-	// Get the cell this player unit is currently in	
-	m_currentCell = m_grid->getCell(m_position);
-
-	// If there is a resource in this cell
-	if (m_currentCell->m_resource != nullptr)
-	{
-		//Check for collisions with resource nodes within this cell
-		if (m_currentCell->m_resource->TryCollision(this))
-		{
-			AddUnit();
-			// Remove this resource from the agents shared resource list
-			m_resourceList.erase(std::find(m_resourceList.begin(), m_resourceList.end(), m_currentCell->m_resource));
-			delete m_currentCell->m_resource;
-			m_currentCell->m_resource = nullptr;
-		}
-	}
+	// Attempt to collect a resource if one is found in this player agents cell
+	AttemptCollectResource();
 
 	// Reset the force for this frame to 0
 	m_force = Vec3(0, 0, 0);
 
-	// Create a path to the selected cell if right clicking
-	if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+	// Either updates and moves along the player path, or attempts to engage in attack with enemies
+	switch (m_state)
 	{
-		Vec3 mousePosition = Vec3(GetMouseX(), GetMouseY(), 0);
-		Cell* destinationCell = m_grid->getCell(mousePosition);
-
-		m_path = m_grid->aStar(m_currentCell, destinationCell);
-	}
-
-	// If there is a path for the player agent to follow
-	if (m_path.size() > 0)
-	{
-		// If the front cell is the last cell in the path, use arrival behaviour
-		if (m_path.size() == 1)
+	case State::STATE_MOVE:
+		// Create a path to the selected cell if right clicking
+		if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
 		{
-			// If the front cell has now been reached, pop it off the path list
-			if (ArrivalBehaviour(m_path.front()))
-			{
-				m_path.erase(m_path.begin());
-			}
+			Vec3 mousePosition = Vec3(GetMouseX(), GetMouseY(), 0);
+			Cell* destinationCell = m_grid->getCell(mousePosition);
+
+			m_path = m_grid->aStar(m_currentCell, destinationCell);
 		}
-		// Otherwise seek towards the front cell in the path list
-		else
+		FollowPath();
+		break;
+	case State::STATE_ATTACK:
+		// Run attack procedures
+
+		// If this agent doesn't have an attack target, set it to be the closest unit in the enemies army
+		if (m_attackTarget == nullptr)
 		{
-			// Some vector maths to stop agents from moving backwards if they are closer to their second path node
-			// Draw a vector from the first node to the second node
-			Vec3 nodeDisplacement = (m_path[1]->m_position - m_path[0]->m_position).GetNormalised();
-			Vec3 agentDisplacement = (m_position - m_path[0]->m_position).GetNormalised();
-			float angle = acos(nodeDisplacement.Dot(agentDisplacement));
-
-			if (angle < PI / 4)
-			{
-				m_path.erase(m_path.begin());
-			}
-
-			// If the front cell has now been reached, pop it off the path list
-			if (SeekBehaviour(m_path.front()))
-			{
-				m_path.erase(m_path.begin());
-			}
+			m_attackTarget = m_leader->m_target->FindClosest(this);
 		}
+
+		// Seek the attack target, if within attack range, then attempt to attack it if the attack cooldown has run out
+		m_attackCooldown -= deltaTime;
+		if (SeekBehaviour(m_attackTarget) && m_attackCooldown <= 0)
+		{
+			// Damages this agents attack target and is true if the target is now dead
+			if (m_attackTarget->TakeDamage(m_damage))
+			{
+				m_attackTarget->KillUnit();
+
+
+				// Reset this units attack target to null as it is now dead
+				m_attackTarget = nullptr;
+			}
+
+			m_attackCooldown = 1;
+		}
+
+		break;
 	}
 
 	// If the unit we're updating isn't the leader, then calculate the cohesion and separation for flocking
@@ -96,12 +83,7 @@ void Player::Update(float deltaTime)
 		CohesionBehaviour();
 	}
 
-	// Add Force multiplied by delta time to Velocity, truncate with the max speed to not over speed
-	m_velocity = Truncate(m_velocity + (m_force * deltaTime), m_maxSpeed);
-	// Add Velocity multiplied by delta time to Position
-	m_position = m_position + (m_velocity * deltaTime);
-	// Scale the velocity down according to the friction
-	m_velocity = m_velocity * m_frictionModifier;
+	UpdateMotion(deltaTime);
 }
 
 bool Player::CohesionBehaviour()
@@ -148,6 +130,31 @@ void Player::AddUnit()
 	Player* newUnit = new Player(m_grid, m_radius);
 	// Spawn the new unit at a random position near the leader
 	newUnit->m_position = m_leader->m_position + Vec3(rand() % 50, rand() % 50, 0) - Vec3(rand() % 50, rand() % 50, 0);
+}
+
+// "Kills" this player unit and removes all references of it
+void Player::KillUnit()
+{
+	std::cout << "PLAYER DEAD LOL" << std::endl;
+}
+
+// Returns the closest unit in this player's army to the inputted agent
+Agent* Player::FindClosest(Agent* agent)
+{
+	Agent* closestPlayer = m_playerUnits.front();
+	float closestDistanceSqr = closestPlayer->m_position.DistanceSqr(agent->m_position);
+
+	for (auto unit : m_playerUnits)
+	{
+		// If this unit is closer to the input agent than the current closest
+		if (unit->m_position.DistanceSqr(agent->m_position) < closestDistanceSqr)
+		{
+			closestPlayer = unit;
+			closestDistanceSqr = unit->m_position.DistanceSqr(agent->m_position);
+		}
+	}
+
+	return closestPlayer;
 }
 
 // Draw the player as a polygon and the mouse follow target

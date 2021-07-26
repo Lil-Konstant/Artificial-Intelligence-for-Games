@@ -21,13 +21,39 @@ public:
 	Vec3 m_force = Vec3(0, 0, 0);
 
 	static std::vector<Resource*> m_resourceList;
+	// Stored in the leader agent only
 	Agent* m_target = nullptr;
 	float m_unitCount = 0;
 
-	virtual void AddUnit() = 0;
-	//DeleteUnit()
+	void AttemptCollectResource();
+	void UpdateMotion(float deltaTime);
+	virtual Agent* FindClosest(Agent* agent) = 0;
 
-	float m_aggroRadius = 200;
+	virtual void AddUnit() = 0;
+	virtual void KillUnit() = 0;
+
+	// Small state machine to track whether agents should follow their path or attack agents
+	enum class State
+	{
+		STATE_MOVE,
+		STATE_ATTACK
+	};
+
+	bool TakeDamage(float damage);
+
+	float m_health = 100;
+	float m_damage = 10;
+	// Range for switching to attack state on a target
+	float m_aggroRange = 200;
+	// Range for being able to actually damage a target
+	float m_attackRange = 0.1f * m_aggroRange;
+	float m_attackCooldown = 1;
+
+	// Radius for AI agents player-in-range checks
+	float m_detectionRadius = 200;
+
+	// Pointer to the agent unit that this agent unit will attempt to attack during attack state
+	Agent* m_attackTarget = nullptr;
 
 	Cell* m_currentCell = nullptr;
 
@@ -37,9 +63,11 @@ protected:
 	virtual bool TryCollision(GameObject* other) = 0;
 
 	void AddBehaviour(Behaviour* behaviour);
-	
+
 	// Behaviours for keeping the agent's army together
+	void FollowPath();
 	bool SeekBehaviour(Cell* target);
+	bool SeekBehaviour(Agent* target);
 	bool ArrivalBehaviour(Cell* target);
 	virtual bool CohesionBehaviour() = 0;
 	virtual bool SeparationBehaviour() = 0;

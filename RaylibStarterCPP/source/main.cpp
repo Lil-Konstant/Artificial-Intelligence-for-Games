@@ -12,27 +12,28 @@ int main(int argc, char* argv[])
     
     InitWindow(screenSize, screenSize, "AI Demonstration - Ronan Richardson s210424");
     SetTargetFPS(60);
-    srand(time(nullptr));
+    //srand(time(nullptr));
 
     Grid* grid = new Grid();
     
     // Create the leader unit, initialise it's starting position and reserve 100 spaces in the units array
-    Player* leader = new Player(grid, 10);
-    leader->m_position = Vec3(screenSize / 2 + (rand() % 100), screenSize / 2 + (rand() % 100), 0);;
-    leader->m_playerUnits.reserve(100);
+    Player* playerLeader = new Player(grid, 10);
+    playerLeader->m_position = Vec3(screenSize / 2 + (rand() % 100), screenSize / 2 + (rand() % 100), 0);;
+    playerLeader->m_playerUnits.reserve(100);
     
     // Initialise an army of 10 units (including the leader)
     for (int i = 0; i < 1; i++)
     {
         Player* unit = new Player(grid, 10);
-        Vec3 position = Vec3(leader->m_position.x + (rand() % 100), leader->m_position.y + (rand() % 100), 0);
+        Vec3 position = Vec3(playerLeader->m_position.x + (rand() % 100), playerLeader->m_position.y + (rand() % 100), 0);
         unit->m_position = position;
     }
 
     // Create the enemy unit, initialise it's starting position and reserve 100 spaces in the units array
-    EnemyAgent* enemyLeader = new EnemyAgent(leader, grid, 10);
+    EnemyAgent* enemyLeader = new EnemyAgent(playerLeader, grid, 10);
     enemyLeader->m_position = Vec3(GetScreenWidth() / 3, GetScreenHeight() / 3, 0);
     enemyLeader->m_enemyUnits.reserve(100);
+    playerLeader->m_target = enemyLeader;
 
     // Create the resource nodes for the map and add them to their cells resource lists
     for (int i = 0; i < 10; i++)
@@ -55,12 +56,29 @@ int main(int argc, char* argv[])
         float deltaTime = GetFrameTime();
 
         // Update the forces on each of the player units this frame
-        for (auto unit : leader->m_playerUnits)
+        // Also check if each player unit is within aggro range of the enemy leader
+        for (auto unit : playerLeader->m_playerUnits)
+        {
             unit->Update(deltaTime);
+
+            // If this unit is in aggro range of the enemy leader, change the enemy leader's army into attack state
+            if (unit->m_position.Distance(enemyLeader->m_position) < enemyLeader->m_aggroRange && enemyLeader->m_state == Agent::State::STATE_MOVE)
+            {
+                enemyLeader->m_state = Agent::State::STATE_ATTACK;
+            }
+        }
         
         // Update the forces on each of the enemy units this frame
         for (auto unit : enemyLeader->m_enemyUnits)
+        {
             unit->Update(deltaTime);
+
+            // If this unit is in aggro range of the enemy leader, change the enemy leader's army into attack state
+            if (unit->m_position.Distance(playerLeader->m_position) < playerLeader->m_aggroRange && playerLeader->m_state == Agent::State::STATE_MOVE)
+            {
+                playerLeader->m_state = Agent::State::STATE_ATTACK;
+            }
+        }
 
         // Paint the cell as untraversable
         if (IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON))
@@ -74,7 +92,7 @@ int main(int argc, char* argv[])
         // If left clicking, spawn a new unit
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
-            leader->AddUnit();
+            playerLeader->AddUnit();
         }
         
         // If shift is pressed, spawn an enemy unit
@@ -106,14 +124,14 @@ int main(int argc, char* argv[])
         if (debugMode)
         {
             grid->Draw();
-            leader->m_grid->getCell(leader->m_position)->Draw(true);
+            playerLeader->m_grid->getCell(playerLeader->m_position)->Draw(true);
             enemyLeader->m_grid->getCell(enemyLeader->m_position)->Draw(true);
-            for (int i = 0; i < leader->m_path.size(); i++)
+            for (int i = 0; i < playerLeader->m_path.size(); i++)
             {
-                if (i + 1 < leader->m_path.size())
-                    leader->m_path[i]->Draw(true, leader->m_path[i + 1]);
+                if (i + 1 < playerLeader->m_path.size())
+                    playerLeader->m_path[i]->Draw(true, playerLeader->m_path[i + 1]);
                 else
-                    leader->m_path[i]->Draw(true, leader->m_path[i]);
+                    playerLeader->m_path[i]->Draw(true, playerLeader->m_path[i]);
             }
             for (int i = 0; i < enemyLeader->m_path.size(); i++)
             {
@@ -126,7 +144,7 @@ int main(int argc, char* argv[])
         }
 
         // Draw every unit in the player army
-        for (auto unit : leader->m_playerUnits)
+        for (auto unit : playerLeader->m_playerUnits)
             unit->Draw();
         // Draw every unit in the enemy army
         for (auto unit : enemyLeader->m_enemyUnits)

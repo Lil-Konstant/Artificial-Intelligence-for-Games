@@ -17,7 +17,7 @@ namespace DecisionTree
 		{
 			float distance = agent->m_position.Distance(agent->m_target->m_position);
 
-			return distance < agent->m_aggroRadius;
+			return distance < agent->m_detectionRadius;
 		}
 	};
 	
@@ -70,7 +70,7 @@ namespace DecisionTree
 
 			// Create a vector that points away from the target, to the edge of this agents flee radius
 			Vec3 fleeDirection = agent->m_position - agent->m_target->m_position;
-			fleeDirection = fleeDirection.GetNormalised() * agent->m_aggroRadius;
+			fleeDirection = fleeDirection.GetNormalised() * agent->m_detectionRadius;
 			// Get the cell at this position for the agent to path to
 			Cell* fleeCell = agent->m_grid->getCell(agent->m_position + fleeDirection);
 

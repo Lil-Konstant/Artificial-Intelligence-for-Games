@@ -2,6 +2,8 @@
 
 // Initialise the static leader pointer as null
 EnemyAgent* EnemyAgent::m_leader = nullptr;
+// Initialise the static state as moving
+Agent::State EnemyAgent::m_state = Agent::State::STATE_MOVE;
 // Initialise the static unit vector as null
 std::vector<EnemyAgent*> EnemyAgent::m_enemyUnits = std::vector<EnemyAgent*>();
 
@@ -36,67 +38,30 @@ EnemyAgent::~EnemyAgent()
 
 void EnemyAgent::Update(float deltaTime)
 {
-	// Get the cell this player unit is currently in	
-	m_currentCell = m_grid->getCell(m_position);
+	// Attempt to collect a resource if one is found in this enemy agents cell
+	AttemptCollectResource();
 
-	// If there is a resource in this cell
-	if (m_currentCell->m_resource != nullptr)
-	{
-		//Check for collisions with resource nodes within this cell
-		if (m_currentCell->m_resource->TryCollision(this))
-		{
-			AddUnit();
-			// Remove this resource from the agents shared resource list
-			m_resourceList.erase(std::find(m_resourceList.begin(), m_resourceList.end(), m_currentCell->m_resource));
-			delete m_currentCell->m_resource;
-			m_currentCell->m_resource = nullptr;
-		}
-	}
-
-	// Traverse the decision tree every frame (or every timer)
-	//m_rootDecision->makeDecision(this);
+	// Traverse the decision tree every timer tick to decide on the enemy agent's state
 	decisionTimer -= deltaTime;
 	if (decisionTimer <= 0 && this == m_leader)
 	{
 		m_rootDecision->makeDecision(this);
-		decisionTimer = 0.5;
+		decisionTimer = 0.5f;
 	}
 	
 	// Reset the force for this frame to 0
 	m_force = Vec3(0, 0, 0);
 
-	// If there is a path for the player agent to follow
-	if (m_path.size() > 0)
+	// Either moves along the enemy path calculated in the decision phase, or engages in attack with player units
+	switch (m_state)
 	{
-		// If the front cell is the last cell in the path, use arrival behaviour
-		if (m_path.size() == 1)
-		{
-			// If the front cell has now been reached, pop it off the path list
-			if (ArrivalBehaviour(m_path.front()))
-			{
-				m_path.erase(m_path.begin());
-			}
-		}
-		// Otherwise seek towards the front cell in the path list
-		else
-		{
-			// Some vector maths to stop agents from moving backwards if they are closer to their second path node
-			// Draw a vector from the first node to the second node
-			Vec3 nodeDisplacement = (m_path[1]->m_position - m_path[0]->m_position).GetNormalised();
-			Vec3 agentDisplacement = (m_position - m_path[0]->m_position).GetNormalised();
-			float angle = acos(nodeDisplacement.Dot(agentDisplacement));
-
-			if (angle < PI / 4)
-			{
-				m_path.erase(m_path.begin());
-			}
-
-			// If the front cell has now been reached, pop it off the path list
-			if (SeekBehaviour(m_path.front()))
-			{
-				m_path.erase(m_path.begin());
-			}
-		}
+	case State::STATE_MOVE:
+		// Move along the path calculated in the decision phase
+		FollowPath();
+		break;
+	case State::STATE_ATTACK:
+		// Run attack procedures
+		break;
 	}
 
 	// If the unit we're updating isn't the leader, then calculate the cohesion and separation for flocking
@@ -106,12 +71,7 @@ void EnemyAgent::Update(float deltaTime)
 		CohesionBehaviour();
 	}
 
-	// Add Force multiplied by delta time to Velocity, truncate with the max speed to not over speed
-	m_velocity = Truncate(m_velocity + (m_force * deltaTime), m_maxSpeed);
-	// Add Velocity multiplied by delta time to Position
-	m_position = m_position + (m_velocity * deltaTime);
-	// Scale the velocity down according to the friction
-	m_velocity = m_velocity * m_frictionModifier;
+	UpdateMotion(deltaTime);
 }
 
 bool EnemyAgent::CohesionBehaviour()
@@ -157,6 +117,31 @@ void EnemyAgent::AddUnit()
 	EnemyAgent* newUnit = new EnemyAgent(m_target, m_grid, m_radius);
 	// Spawn the new unit at a random position near the leader
 	newUnit->m_position = m_leader->m_position + Vec3(rand() % 50, rand() % 50, 0) - Vec3(rand() % 50, rand() % 50, 0);
+}
+
+// "Kills" this enemy unit and removes all references of it
+void EnemyAgent::KillUnit()
+{
+	std::cout << "ENEMY DEAD LOL" << std::endl;
+}
+
+// Finds the closest enemy agent in this army to the inputted agent
+Agent* EnemyAgent::FindClosest(Agent* agent)
+{
+	Agent* closestEnemy = m_enemyUnits.front();
+	float closestDistanceSqr = closestEnemy->m_position.DistanceSqr(agent->m_position);
+
+	for (auto unit : m_enemyUnits)
+	{
+		// If this unit is closer to the input agent than the current closest
+		if (unit->m_position.DistanceSqr(agent->m_position) < closestDistanceSqr)
+		{
+			closestEnemy = unit;
+			closestDistanceSqr = unit->m_position.DistanceSqr(agent->m_position);
+		}
+	}
+
+	return closestEnemy;
 }
 
 void EnemyAgent::Draw()
