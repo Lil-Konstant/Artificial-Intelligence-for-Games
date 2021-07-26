@@ -6,6 +6,8 @@ EnemyAgent* EnemyAgent::m_leader = nullptr;
 Agent::State EnemyAgent::m_state = Agent::State::STATE_MOVE;
 // Initialise the static unit vector as null
 std::vector<EnemyAgent*> EnemyAgent::m_enemyUnits = std::vector<EnemyAgent*>();
+// Initialise the static armyDefeated bool as false
+bool EnemyAgent::m_armyDefeated = false;
 
 EnemyAgent::EnemyAgent(Agent* target, Grid* grid, float radius) : Agent(grid, radius)
 {
@@ -60,7 +62,7 @@ void EnemyAgent::Update(float deltaTime)
 		FollowPath();
 		break;
 	case State::STATE_ATTACK:
-		// Run attack procedures
+		AttackSequence(deltaTime);
 		break;
 	}
 
@@ -124,21 +126,32 @@ void EnemyAgent::KillUnit()
 {
 	std::cout << "ENEMY DEAD LOL" << std::endl;
 
-	// If killing the last enemy in the enemy army, return player win state
+	// Remove this unit from the enemyUnits list
+	m_enemyUnits.erase(std::find(m_enemyUnits.begin(), m_enemyUnits.end(), this));
+
+	// If killing the last enemy in the enemy army, exit early for a player win state
+	if (m_enemyUnits.size() == 0)
+	{
+		EnemyAgent::m_armyDefeated = true;
+		return;
+	}
 
 	// If killing the leader unit, replace it with the next in charge
 	if (this == m_leader)
 	{
 		// Repoint the enemy armies leader pointer to the next in charge
+		m_leader = m_enemyUnits.front();
 
-
-		// Replace the player leaders target pointer with the new enemy leadeer
+		// Replace the player leaders target pointer with the new enemy leader
 		m_target->m_target = m_leader;
+
+		// Return before deleting this as it will invalidate the pointer in the main game loop (delete it there instead)
+		m_leaderDeleted = true;
+		return;
 	}
 
-	// Remove this unit from the enemyUnits list
-
-
+	// Otherwise this unit is not special and can just be deleted
+	delete this;
 }
 
 // Finds the closest enemy agent in this army to the inputted agent
@@ -158,6 +171,31 @@ Agent* EnemyAgent::FindClosest(Agent* agent)
 	}
 
 	return closestEnemy;
+}
+
+// Run attack procedures
+void EnemyAgent::AttackSequence(float deltaTime)
+{
+	// Update this agents attack target with the current closest enemy
+	m_attackTarget = m_leader->m_target->FindClosest(this);
+
+	// Seek the attack target, if within attack range, then attempt to attack it if the attack cooldown has run out
+	m_attackCooldown -= deltaTime;
+	if (SeekBehaviour(m_attackTarget) && m_attackCooldown <= 0)
+	{
+		// Damages this agents attack target and is true if the target is now dead
+		if (m_attackTarget->TakeDamage(m_damage))
+		{
+			// Destroy the target and remove all references to it
+			m_attackTarget->KillUnit();
+
+			// Reset this units attack target to null as it is now dead
+			m_attackTarget = nullptr;
+		}
+
+		// Reset the attack cooldown back to 1 second
+		m_attackCooldown = 1;
+	}
 }
 
 void EnemyAgent::Draw()

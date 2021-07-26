@@ -15,6 +15,7 @@ public:
     void Draw() override;
     Agent* FindClosest(Agent* agent) override;
 
+    void AttackSequence(float deltaTime) override;
 
     bool CohesionBehaviour() override;
     bool SeparationBehaviour() override;
@@ -25,9 +26,12 @@ public:
     // For unit traversal
     static EnemyAgent* m_leader;
     static std::vector<EnemyAgent*> m_enemyUnits;
+    static bool m_armyDefeated;
     
     // Initialise this agents state as moving
     static State m_state;
+
+    bool m_leaderDeleted = false;
 
     // Root node of decision tree, checked every update and recurses down linked decision branches
     TrueFalseDecision* m_rootDecision;

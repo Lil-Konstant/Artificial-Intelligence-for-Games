@@ -36,12 +36,12 @@
     <ClCompile Include="source\Resource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\GameManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\MathsClasses.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\Behaviour.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\Agent.h">
@@ -69,6 +69,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\Resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\GameManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

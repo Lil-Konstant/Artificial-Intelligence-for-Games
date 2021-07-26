@@ -20,8 +20,9 @@ public:
 	Cell* getCell(Vec3 position);
 	std::vector<Cell*> aStar(Cell* startCell, Cell* endCell);
 
-	int CELL_SIZE = GetScreenHeight() / NUM_CELLS;
 	static const int NUM_CELLS = 20;
+	int CELL_SIZE = GetScreenHeight() / NUM_CELLS;
+	
 
 	// Construct the 4 search waypoints near the corners of the map
 	Cell* topLeftWaypoint = getCell(Vec3(GetScreenWidth() / 10, GetScreenHeight() / 10, 0));
