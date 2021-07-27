@@ -20,7 +20,6 @@ public:
 	static std::vector<Resource*> m_resourceList;
 	// Stored in the leader agent only
 	Agent* m_target = nullptr;
-	float m_unitCount = 0;
 
 	void AttemptCollectResource();
 	void UpdateMotion(float deltaTime);
@@ -77,5 +76,5 @@ protected:
 	float m_maxSpeed = 50;
 	float m_cohesionForce = 5;
 	float m_separationForce = 30;
-	float m_arrivalRadius = 150;
+	float m_arrivalRadius = 100;
 };

@@ -2,6 +2,16 @@
 
 Grid::Grid()
 {
+	
+}
+
+Grid::~Grid()
+{
+
+}
+
+void Grid::InitialiseEdges()
+{
 	for (int row = 0; row < NUM_CELLS; row++)
 	{
 		for (int column = 0; column < NUM_CELLS; column++)
@@ -9,62 +19,61 @@ Grid::Grid()
 			// Make the position of the cell its centre
 			m_gridArray[row][column].m_position = Vec3((column * CELL_SIZE) + (CELL_SIZE / 2), (row * CELL_SIZE) + (CELL_SIZE / 2), 0);
 
-			// Fill this cells edge list accordingly
-			// If the left cell is within the grid array
-			if (column - 1 >= 0)
+			// If the cell is traversable, setup its properties
+			if (m_gridArray[row][column].m_traversable)
 			{
-				Edge left = Edge(&m_gridArray[row][column - 1], 1);
-				m_gridArray[row][column].m_edges.push_back(left);
-			}
-			// If the top left cell is within the grid array
-			if (column - 1 >= 0 && row - 1 >= 0)
-			{
-				Edge topLeft = Edge(&m_gridArray[row - 1][column - 1], 1.4f);
-				m_gridArray[row][column].m_edges.push_back(topLeft);	
-			}
-			// If the bottom left cell is within the grid array
-			if (column - 1 >= 0 && row + 1 < NUM_CELLS)
-			{
-				Edge bottomLeft = Edge(&m_gridArray[row + 1][column - 1], 1.4f);
-				m_gridArray[row][column].m_edges.push_back(bottomLeft);
-			}
-			// If the right cell is within the grid array
-			if (column + 1 < NUM_CELLS)
-			{
-				Edge right = Edge(&m_gridArray[row][column + 1], 1);
-				m_gridArray[row][column].m_edges.push_back(right);
-			}
-			// If the top right cell is within the grid array
-			if (column + 1 < NUM_CELLS && row - 1 >= 0)
-			{
-				Edge topRight = Edge(&m_gridArray[row - 1][column + 1], 1.4f);
-				m_gridArray[row][column].m_edges.push_back(topRight);
-			}
-			// If the bottom right cell is within the grid array
-			if (column + 1 < NUM_CELLS && row + 1 < NUM_CELLS)
-			{
-				Edge bottomRight = Edge(&m_gridArray[row + 1][column + 1], 1.4f);
-				m_gridArray[row][column].m_edges.push_back(bottomRight);
-			}
-			// If the top cell is within the grid array
-			if (row - 1 >= 0)
-			{
-				Edge top = Edge(&m_gridArray[row - 1][column], 1);
-				m_gridArray[row][column].m_edges.push_back(top);
-			}
-			// If the bottom cell is within the grid array
-			if (row + 1 < NUM_CELLS)
-			{
-				Edge bottom = Edge(&m_gridArray[row + 1][column], 1);
-				m_gridArray[row][column].m_edges.push_back(bottom);
+				// Fill this cells edge list accordingly
+				// If the left cell is within the grid array and traversable
+				if (column - 1 >= 0 && m_gridArray[row][column - 1].m_traversable)
+				{
+					Edge left = Edge(&m_gridArray[row][column - 1], 1);
+					m_gridArray[row][column].m_edges.push_back(left);
+				}
+				// If the top left cell is within the grid array and traversable
+				if (column - 1 >= 0 && row - 1 >= 0 && m_gridArray[row - 1][column - 1].m_traversable)
+				{
+					Edge topLeft = Edge(&m_gridArray[row - 1][column - 1], 1.4f);
+					m_gridArray[row][column].m_edges.push_back(topLeft);
+				}
+				// If the bottom left cell is within the grid array and traversable
+				if (column - 1 >= 0 && row + 1 < NUM_CELLS && m_gridArray[row + 1][column - 1].m_traversable)
+				{
+					Edge bottomLeft = Edge(&m_gridArray[row + 1][column - 1], 1.4f);
+					m_gridArray[row][column].m_edges.push_back(bottomLeft);
+				}
+				// If the right cell is within the grid array and traversable
+				if (column + 1 < NUM_CELLS && m_gridArray[row][column + 1].m_traversable)
+				{
+					Edge right = Edge(&m_gridArray[row][column + 1], 1);
+					m_gridArray[row][column].m_edges.push_back(right);
+				}
+				// If the top right cell is within the grid array and traversable
+				if (column + 1 < NUM_CELLS && row - 1 >= 0 && m_gridArray[row - 1][column + 1].m_traversable)
+				{
+					Edge topRight = Edge(&m_gridArray[row - 1][column + 1], 1.4f);
+					m_gridArray[row][column].m_edges.push_back(topRight);
+				}
+				// If the bottom right cell is within the grid array and traversable
+				if (column + 1 < NUM_CELLS && row + 1 < NUM_CELLS && m_gridArray[row + 1][column + 1].m_traversable)
+				{
+					Edge bottomRight = Edge(&m_gridArray[row + 1][column + 1], 1.4f);
+					m_gridArray[row][column].m_edges.push_back(bottomRight);
+				}
+				// If the top cell is within the grid array and traversable
+				if (row - 1 >= 0 && m_gridArray[row - 1][column].m_traversable)
+				{
+					Edge top = Edge(&m_gridArray[row - 1][column], 1);
+					m_gridArray[row][column].m_edges.push_back(top);
+				}
+				// If the bottom cell is within the grid array and traversable
+				if (row + 1 < NUM_CELLS && m_gridArray[row + 1][column].m_traversable)
+				{
+					Edge bottom = Edge(&m_gridArray[row + 1][column], 1);
+					m_gridArray[row][column].m_edges.push_back(bottom);
+				}
 			}
 		}
 	}
-}
-
-Grid::~Grid()
-{
-
 }
 
 // Spacially indexes the grid map to return the grid cell of the inputted vector position
@@ -188,12 +197,8 @@ void Grid::Draw(bool debugMode)
 		for (int column = 0; column < NUM_CELLS; column++)
 		{
 			m_gridArray[row][column].Draw(debugMode);
-			Vec3 lineStart = Vec3((column * CELL_SIZE) + CELL_SIZE, 0, 0);
-			Vec3 lineEnd = Vec3((column * CELL_SIZE) + CELL_SIZE, GetScreenHeight(), 0);
-			DrawLine(lineStart.x, lineStart.y, lineEnd.x, lineEnd.y, BLACK);
+			// Draw the edges of the cell
+			DrawRectangleLines(m_gridArray[row][column].m_position.x - (CELL_SIZE / 2), m_gridArray[row][column].m_position.y - (CELL_SIZE / 2), CELL_SIZE, CELL_SIZE, BLACK);
 		}
-		Vec3 lineStart = Vec3(0, (row * CELL_SIZE) + CELL_SIZE, 0);
-		Vec3 lineEnd = Vec3(GetScreenWidth(), (row * CELL_SIZE) + CELL_SIZE, 0);
-		DrawLine(lineStart.x, lineStart.y, lineEnd.x, lineEnd.y, BLACK);
 	}
 }

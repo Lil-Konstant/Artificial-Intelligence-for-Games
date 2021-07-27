@@ -14,6 +14,7 @@ class Grid
 public:
 	Grid();
 	~Grid();
+	void InitialiseEdges();
 
 	void Draw(bool debugMode);
 

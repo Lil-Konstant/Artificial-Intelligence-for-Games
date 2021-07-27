@@ -11,7 +11,29 @@ void GameManager::Init(bool debugMode, float screenSize)
 
     m_grid = new Grid();
     
-    m_grid->SetTerrain(Vec3(1, 1, 0), Vec3(5, 5, 0));
+    // Border walls
+    m_grid->SetTerrain(Vec3(0, 0, 0), Vec3(m_grid->NUM_CELLS - 1, 0, 0));
+    m_grid->SetTerrain(Vec3(0, 1, 0), Vec3(0, m_grid->NUM_CELLS - 1, 0));
+    m_grid->SetTerrain(Vec3(m_grid->NUM_CELLS - 1, 1, 0), Vec3(m_grid->NUM_CELLS - 1, m_grid->NUM_CELLS - 1, 0));
+    m_grid->SetTerrain(Vec3(0, m_grid->NUM_CELLS - 1, 0), Vec3(m_grid->NUM_CELLS - 1, m_grid->NUM_CELLS - 1, 0));
+
+    // Block 1
+    m_grid->SetTerrain(Vec3(3, 3, 0), Vec3(4, 4, 0));
+    // Block 2
+    m_grid->SetTerrain(Vec3(13, 13, 0), Vec3(13, 16, 0));
+    m_grid->SetTerrain(Vec3(14, 12, 0), Vec3(14, 15, 0));
+    m_grid->SetTerrain(Vec3(15, 11, 0), Vec3(15, 14, 0));
+    // Block 3
+    m_grid->SetTerrain(Vec3(3, 16, 0), Vec3(7, 16, 0));
+    m_grid->SetTerrain(Vec3(5, 17, 0), Vec3(7, 17, 0));
+    // Block 4
+    m_grid->SetTerrain(Vec3(14, 4, 0), Vec3(15, 7, 0));
+    // Block 5
+    m_grid->SetTerrain(Vec3(4, 7, 0), Vec3(6, 7, 0));
+    m_grid->SetTerrain(Vec3(4, 8, 0), Vec3(4, 9, 0));
+
+    // Initialise the cells and edges of the grid after terrain has been setup
+    m_grid->InitialiseEdges();
 
     // Seed random for object placement
     srand(time(nullptr));
@@ -40,8 +62,13 @@ void GameManager::Init(bool debugMode, float screenSize)
     for (int i = 0; i < 10; i++)
     {
         Resource* resource = new Resource(10);
+        
         // Choose a random cell to place the resource at the centre of
         Cell* placementCell = m_grid->getCell(Vec3(rand() % m_screenSize, rand() % m_screenSize, 0));
+        // Make sure the resource isn't placed inside an untraversable cell
+        while (!placementCell->m_traversable)
+            placementCell = m_grid->getCell(Vec3(rand() % m_screenSize, rand() % m_screenSize, 0));
+
         placementCell->m_resource = resource;
         resource->m_position = placementCell->m_position;
         // Add the resource to the agents shared resource list
@@ -137,8 +164,6 @@ void GameManager::Draw()
     DrawFPS(10, 10);
 
     // Draw out the player and enemies paths
-    /*m_playerLeader->m_grid->getCell(m_playerLeader->m_position)->Draw(true);
-    m_enemyLeader->m_grid->getCell(m_enemyLeader->m_position)->Draw(true);*/
     for (int i = 0; i < m_playerLeader->m_path.size(); i++)
     {
         if (i + 1 < (int)m_playerLeader->m_path.size())
@@ -183,11 +208,6 @@ void GameManager::DebugMechanics()
     if (IsKeyPressed(KEY_LEFT_SHIFT))
     {
         m_enemyLeader->AddUnit();
-    }
-    // If is pressed, swap unit strength
-    if (IsKeyPressed(KEY_Q))
-    {
-        m_enemyLeader->m_unitCount *= -1;
     }
     // Toggle debug mode
     if (IsKeyPressed(KEY_SPACE))

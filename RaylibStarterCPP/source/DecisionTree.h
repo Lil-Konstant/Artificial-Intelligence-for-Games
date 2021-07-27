@@ -27,9 +27,7 @@ namespace DecisionTree
 		virtual bool conditionCheck(Agent* agent)
 		{
 			// Compare the unit count of the player with that of the AI
-			return agent->m_unitCount > agent->m_target->m_unitCount;
-
-			// return agent->GetUnitCount() > agent->m_target->GetUnitCount() + 2;
+			return agent->GetUnitCount() > agent->m_target->GetUnitCount() + 2;
 		}
 	};
 

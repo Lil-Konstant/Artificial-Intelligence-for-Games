@@ -24,9 +24,6 @@ EnemyAgent::EnemyAgent(Agent* target, Grid* grid, float radius) : Agent(grid, ra
 	// Set this AI's target to be the player leader
 	m_target = target;
 
-	// DEBUGGING
-	m_unitCount = 100;
-
 	// Construct decision tree for the enemy agent
 	TrueFalseDecision* playerInteractionMode = new TrueFalseDecision(new PursueAction(), new FleeAction(), new IsStronger());
 	TrueFalseDecision* npcRoamMode = new TrueFalseDecision(new SearchAction(), new GatherAction(), new IsStronger());
