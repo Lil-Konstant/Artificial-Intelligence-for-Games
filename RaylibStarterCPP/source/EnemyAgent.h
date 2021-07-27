@@ -38,5 +38,7 @@ public:
     float decisionTimer = 0.5f;
 
     bool TryCollision(GameObject* other) override { return true; }
+
+    int GetUnitCount() override { return m_enemyUnits.size(); }
 };
 

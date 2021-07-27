@@ -169,14 +169,25 @@ std::vector<Cell*> Grid::aStar(Cell* startCell, Cell* endCell)
 	return path;
 }
 
+void Grid::SetTerrain(Vec3 startIndex, Vec3 endIndex)
+{
+	for (int row = startIndex.y; row <= endIndex.y; row++)
+	{
+		for (int column = startIndex.x; column <= endIndex.x; column++)
+		{
+			m_gridArray[row][column].m_traversable = false;
+		}
+	}
+}
+
 // Visually represent the cells in the grid
-void Grid::Draw()
+void Grid::Draw(bool debugMode)
 {
 	for (int row = 0; row < NUM_CELLS; row++)
 	{
 		for (int column = 0; column < NUM_CELLS; column++)
 		{
-			m_gridArray[row][column].Draw();
+			m_gridArray[row][column].Draw(debugMode);
 			Vec3 lineStart = Vec3((column * CELL_SIZE) + CELL_SIZE, 0, 0);
 			Vec3 lineEnd = Vec3((column * CELL_SIZE) + CELL_SIZE, GetScreenHeight(), 0);
 			DrawLine(lineStart.x, lineStart.y, lineEnd.x, lineEnd.y, BLACK);

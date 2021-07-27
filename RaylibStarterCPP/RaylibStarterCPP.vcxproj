@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\Agent.cpp" />
+    <ClCompile Include="source\Cell.cpp" />
     <ClCompile Include="source\EnemyAgent.cpp" />
     <ClCompile Include="source\GameManager.cpp" />
     <ClCompile Include="source\Grid.cpp" />

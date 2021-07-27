@@ -32,5 +32,7 @@ public:
 	void KillUnit() override;
 
 	bool TryCollision(GameObject* other) override { return true; }
+
+	int GetUnitCount() override { return m_playerUnits.size(); }
 };
 

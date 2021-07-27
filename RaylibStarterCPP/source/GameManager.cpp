@@ -1,4 +1,5 @@
 #include "GameManager.h"
+#include <chrono>
 
 void GameManager::Init(bool debugMode, float screenSize)
 {
@@ -10,6 +11,8 @@ void GameManager::Init(bool debugMode, float screenSize)
 
     m_grid = new Grid();
     
+    m_grid->SetTerrain(Vec3(1, 1, 0), Vec3(5, 5, 0));
+
     // Seed random for object placement
     srand(time(nullptr));
 
@@ -46,24 +49,15 @@ void GameManager::Init(bool debugMode, float screenSize)
     }
 }
 
-// True if the game has finished and the player has one
-bool GameManager::UpdatePlayerArmy(float deltaTime)
+// 
+void GameManager::UpdatePlayerArmy(float deltaTime)
 {
-    // Update the forces on each of the player units this frame
+    // Update the forces on each of the player units this frame if the enemy army is yet to be defeated
     // Also check if each player unit is within aggro range of the enemy leader
-    for (auto unit : m_playerLeader->m_playerUnits)
+    for (int i = 0; i < m_playerLeader->GetUnitCount() && m_enemyLeader->m_armyDefeated == false; i++)
     {
-        unit->Update(deltaTime);
-
-        // If the final enemy unit was killed by this player unit, trigger a player win state
-        if (m_enemyLeader->m_armyDefeated == true)
-        {
-            WinSequence(WinState::STATE_PLAYER_WIN);
-            return true;
-        }
-
         // If the enemy leader was killed by this unit but there are more enemies left
-        else if (m_enemyLeader->m_leaderDeleted == true)
+        if (m_enemyLeader->m_leaderDeleted == true)
         {
             // Delete the unit and repoint the enemy leader pointer
             EnemyAgent* temp = m_enemyLeader->m_leader;
@@ -71,17 +65,39 @@ bool GameManager::UpdatePlayerArmy(float deltaTime)
             m_enemyLeader = temp;
         }
 
+        m_playerLeader->m_playerUnits[i]->Update(deltaTime);
+
         // If this unit is in aggro range of the enemy leader, change the enemy leader's army into attack state
-        if (unit->m_position.Distance(m_enemyLeader->m_position) < m_enemyLeader->m_aggroRange && m_enemyLeader->m_state == Agent::State::STATE_MOVE)
+        if (m_playerLeader->m_playerUnits[i]->m_position.Distance(m_enemyLeader->m_position) < m_enemyLeader->m_aggroRange && m_enemyLeader->m_state == Agent::State::STATE_MOVE)
         {
             m_enemyLeader->m_state = Agent::State::STATE_ATTACK;
         }
     }
-    return false;
 }
 
-bool GameManager::UpdateEnemyArmy(float deltaTime)
+void GameManager::UpdateEnemyArmy(float deltaTime)
 {
+    for (int i = 0; i < m_enemyLeader->GetUnitCount() && m_playerLeader->m_armyDefeated == false; i++)
+    {
+        // If the enemy leader was killed by this unit but there are more enemies left
+        if (m_playerLeader->m_leaderDeleted == true)
+        {
+            // Delete the unit and repoint the enemy leader pointer
+            Player* temp = m_playerLeader->m_leader;
+            delete m_playerLeader;
+            m_playerLeader = temp;
+        }
+
+        m_enemyLeader->m_enemyUnits[i]->Update(deltaTime);
+
+        // If this unit is in aggro range of the player leader, change the player leader's army into attack state
+        if (m_enemyLeader->m_position.Distance(m_playerLeader->m_position) < m_playerLeader->m_aggroRange && m_playerLeader->m_state == Agent::State::STATE_MOVE)
+        {
+            m_playerLeader->m_state = Agent::State::STATE_ATTACK;
+        }
+    }
+
+    /*
     // Update the forces on each of the enemy units this frame
     for (auto unit : m_enemyLeader->m_enemyUnits)
     {
@@ -91,7 +107,7 @@ bool GameManager::UpdateEnemyArmy(float deltaTime)
         if (m_playerLeader->m_armyDefeated == true)
         {
             WinSequence(WinState::STATE_ENEMY_WIN);
-            return true;
+            return;
         }
 
         // If the enemy leader was killed by this unit but there are more enemies left
@@ -109,7 +125,8 @@ bool GameManager::UpdateEnemyArmy(float deltaTime)
             m_playerLeader->m_state = Agent::State::STATE_ATTACK;
         }
     }
-    return false;
+    return;
+    */
 }
 
 // Run the win sequence corresponding to either a player or enemy win
@@ -122,8 +139,10 @@ void GameManager::WinSequence(WinState winState)
         while (true)
         {
             BeginDrawing;
-            // PLAYER WINS
+            ClearBackground(DARKBLUE);
+            DrawText(TextFormat("Player 1 Wins!"), 200, 160, 40, BLUE);
             EndDrawing;
+            if (IsKeyPressed(KEY_ESCAPE)) { break; }
         }
         break;
     case WinState::STATE_ENEMY_WIN:
@@ -131,8 +150,10 @@ void GameManager::WinSequence(WinState winState)
         while (true)
         {
             BeginDrawing;
-            // ENEMY WINS
+            ClearBackground(DARKBLUE);
+            DrawText(TextFormat("Player 1 Wins!"), 200, 160, 40, BLUE);
             EndDrawing;
+            if (IsKeyPressed(KEY_ESCAPE)) { break; }
         }
         break;
     }
@@ -141,29 +162,27 @@ void GameManager::WinSequence(WinState winState)
 void GameManager::Draw()
 {
     BeginDrawing();
-    ClearBackground(DARKBLUE);
+    ClearBackground(DARKGREEN);
 
-    // If in debug mode, draw the grid cells and their connections, as well as the players A* path
-    if (m_debugMode)
+    m_grid->Draw(m_debugMode);
+    DrawFPS(10, 10);
+
+    // Draw out the player and enemies paths
+    m_playerLeader->m_grid->getCell(m_playerLeader->m_position)->Draw(true);
+    m_enemyLeader->m_grid->getCell(m_enemyLeader->m_position)->Draw(true);
+    for (int i = 0; i < m_playerLeader->m_path.size(); i++)
     {
-        m_grid->Draw();
-        m_playerLeader->m_grid->getCell(m_playerLeader->m_position)->Draw(true);
-        m_enemyLeader->m_grid->getCell(m_enemyLeader->m_position)->Draw(true);
-        for (int i = 0; i < m_playerLeader->m_path.size(); i++)
-        {
-            if (i + 1 < m_playerLeader->m_path.size())
-                m_playerLeader->m_path[i]->Draw(true, m_playerLeader->m_path[i + 1]);
-            else
-                m_playerLeader->m_path[i]->Draw(true, m_playerLeader->m_path[i]);
-        }
-        for (int i = 0; i < m_enemyLeader->m_path.size(); i++)
-        {
-            if (i + 1 < m_enemyLeader->m_path.size())
-                m_enemyLeader->m_path[i]->Draw(true, m_enemyLeader->m_path[i + 1]);
-            else
-                m_enemyLeader->m_path[i]->Draw(true, m_enemyLeader->m_path[i]);
-        }
-        DrawFPS(10, 10);
+        if (i + 1 < (int)m_playerLeader->m_path.size())
+            m_playerLeader->m_path[i]->Draw(m_debugMode, true, m_playerLeader->m_path[i + 1]);
+        else
+            m_playerLeader->m_path[i]->Draw(m_debugMode, true, m_playerLeader->m_path[i]);
+    }
+    for (int i = 0; i < m_enemyLeader->m_path.size(); i++)
+    {
+        if (i + 1 < (int)m_enemyLeader->m_path.size())
+            m_enemyLeader->m_path[i]->Draw(m_debugMode, true, m_enemyLeader->m_path[i + 1]);
+        else
+            m_enemyLeader->m_path[i]->Draw(m_debugMode, true, m_enemyLeader->m_path[i]);
     }
 
     // Draw every unit in the player army

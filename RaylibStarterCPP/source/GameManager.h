@@ -7,13 +7,7 @@ using namespace MathsClasses;
 class GameManager
 {
 private:
-	bool m_debugMode = false;
-	int m_screenSize = 500;
-
 	Grid* m_grid = nullptr;
-
-	Player* m_playerLeader = nullptr;
-	EnemyAgent* m_enemyLeader = nullptr;
 
 	enum class WinState
 	{
@@ -22,9 +16,18 @@ private:
 	};
 
 public:
+	int m_screenSize;
+	bool m_debugMode = false;
+	
+	WinState GetPlayerWin() { return WinState::STATE_PLAYER_WIN; }
+	WinState GetEnemyWin() { return WinState::STATE_ENEMY_WIN; }
+
+	Player* m_playerLeader = nullptr;
+	EnemyAgent* m_enemyLeader = nullptr;
+
 	void Init(bool debugMode, float screenSize);
-	bool UpdatePlayerArmy(float deltaTime);
-	bool UpdateEnemyArmy(float deltaTime);
+	void UpdatePlayerArmy(float deltaTime);
+	void UpdateEnemyArmy(float deltaTime);
 	void WinSequence(WinState winState);
 	void Draw();
 	void DebugMechanics();

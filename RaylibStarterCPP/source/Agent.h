@@ -54,6 +54,8 @@ public:
 
 	Cell* m_currentCell = nullptr;
 
+	virtual int GetUnitCount() = 0;
+
 protected:
 	virtual void Update(float deltaTime) = 0;
 	virtual void Draw() = 0;
