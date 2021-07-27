@@ -96,37 +96,6 @@ void GameManager::UpdateEnemyArmy(float deltaTime)
             m_playerLeader->m_state = Agent::State::STATE_ATTACK;
         }
     }
-
-    /*
-    // Update the forces on each of the enemy units this frame
-    for (auto unit : m_enemyLeader->m_enemyUnits)
-    {
-        unit->Update(deltaTime);
-
-        // If the final player unit was killed by this enemy unit, trigger an enemy win state
-        if (m_playerLeader->m_armyDefeated == true)
-        {
-            WinSequence(WinState::STATE_ENEMY_WIN);
-            return;
-        }
-
-        // If the enemy leader was killed by this unit but there are more enemies left
-        else if (m_playerLeader->m_leaderDeleted == true)
-        {
-            // Delete the unit and repoint the enemy leader pointer
-            Player* temp = m_playerLeader->m_leader;
-            delete m_playerLeader;
-            m_playerLeader = temp;
-        }
-
-        // If this unit is in aggro range of the player leader, change the player leader's army into attack state
-        if (unit->m_position.Distance(m_playerLeader->m_position) < m_playerLeader->m_aggroRange && m_playerLeader->m_state == Agent::State::STATE_MOVE)
-        {
-            m_playerLeader->m_state = Agent::State::STATE_ATTACK;
-        }
-    }
-    return;
-    */
 }
 
 // Run the win sequence corresponding to either a player or enemy win
@@ -168,8 +137,8 @@ void GameManager::Draw()
     DrawFPS(10, 10);
 
     // Draw out the player and enemies paths
-    m_playerLeader->m_grid->getCell(m_playerLeader->m_position)->Draw(true);
-    m_enemyLeader->m_grid->getCell(m_enemyLeader->m_position)->Draw(true);
+    /*m_playerLeader->m_grid->getCell(m_playerLeader->m_position)->Draw(true);
+    m_enemyLeader->m_grid->getCell(m_enemyLeader->m_position)->Draw(true);*/
     for (int i = 0; i < m_playerLeader->m_path.size(); i++)
     {
         if (i + 1 < (int)m_playerLeader->m_path.size())
