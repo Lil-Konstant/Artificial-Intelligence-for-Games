@@ -17,17 +17,19 @@ EnemyAgent::EnemyAgent(Agent* target, Grid* grid, float radius) : Agent(grid, ra
 		m_leader = this;
 	}
 
-	// Spawn this unit within 100 units of the enemy leader
-	m_position = Vec3(m_leader->m_position.x + (rand() % 100), m_leader->m_position.y + (rand() % 100), 0);
+	// Spawn this unit within 50 units of the enemy leader
+	m_position = Vec3(m_leader->m_position.x + (rand() % 50), m_leader->m_position.y + (rand() % 50), 0);
 	m_enemyUnits.push_back(this);
 
 	// Set this AI's target to be the player leader
 	m_target = target;
 
-	// Construct decision tree for the enemy agent
-	TrueFalseDecision* playerInteractionMode = new TrueFalseDecision(new PursueAction(), new FleeAction(), new IsStronger());
-	TrueFalseDecision* npcRoamMode = new TrueFalseDecision(new SearchAction(), new GatherAction(), new IsStronger());
-	m_rootDecision = new TrueFalseDecision(playerInteractionMode, npcRoamMode, new InRange());
+	// Construct decision tree for the enemy agent (refer to the diagram in the TDD for a better view of the decision tree, as it uses the same branch numbering)
+	TrueFalseDecision* branch3 = new TrueFalseDecision(new GatherAction(), new SearchAction(), new ResourcesRemain());
+	TrueFalseDecision* branch4 = new TrueFalseDecision(new FleeAction(), new PursueAction(), new ResourcesRemain());
+	TrueFalseDecision* branch1 = new TrueFalseDecision(new SearchAction(), branch3, new IsStronger());
+	TrueFalseDecision* branch2 = new TrueFalseDecision(new PursueAction(), branch4, new IsStronger());
+	m_rootDecision = new TrueFalseDecision(branch2, branch1, new InRange());
 }
 
 EnemyAgent::~EnemyAgent()

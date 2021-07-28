@@ -28,6 +28,7 @@
     <ClCompile Include="source\MathsClasses.cpp" />
     <ClCompile Include="source\Player.cpp" />
     <ClCompile Include="source\Resource.cpp" />
+    <ClCompile Include="source\SearchWaypoint.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\Agent.h" />
@@ -41,6 +42,7 @@
     <ClInclude Include="source\MathsClasses.h" />
     <ClInclude Include="source\Player.h" />
     <ClInclude Include="source\Resource.h" />
+    <ClInclude Include="source\SearchWaypoint.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

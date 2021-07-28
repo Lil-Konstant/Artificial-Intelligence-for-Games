@@ -1,8 +1,10 @@
 #include "Grid.h"
 
+// The grid constructor simply makes sure that the cell class records the same cell size after the screen has been calculated
 Grid::Grid()
 {
-	
+	CELL_SIZE = GetScreenHeight() / NUM_CELLS;
+	Cell::CELL_SIZE = CELL_SIZE;
 }
 
 Grid::~Grid()
@@ -74,6 +76,93 @@ void Grid::InitialiseEdges()
 			}
 		}
 	}
+
+	// Initalise the 9 waypoints and connect them together appropriately
+	InitialiseWaypoints();
+}
+
+void Grid::InitialiseWaypoints()
+{
+	// Initialise the 9 waypoints and their positions
+	SearchWaypoint* waypoint1 = new SearchWaypoint(10);
+	waypoint1->m_position = m_gridArray[2][2].m_position;
+	SearchWaypoint* waypoint2 = new SearchWaypoint(10);
+	waypoint2->m_position = m_gridArray[2][10].m_position;
+	SearchWaypoint* waypoint3 = new SearchWaypoint(10);
+	waypoint3->m_position = m_gridArray[2][17].m_position;
+	SearchWaypoint* waypoint4 = new SearchWaypoint(10);
+	waypoint4->m_position = m_gridArray[10][17].m_position;
+	SearchWaypoint* waypoint5 = new SearchWaypoint(10);
+	waypoint5->m_position = m_gridArray[17][17].m_position;
+	SearchWaypoint* waypoint6 = new SearchWaypoint(10);
+	waypoint6->m_position = m_gridArray[17][10].m_position;
+	SearchWaypoint* waypoint7 = new SearchWaypoint(10);
+	waypoint7->m_position = m_gridArray[17][2].m_position;
+	SearchWaypoint* waypoint8 = new SearchWaypoint(10);
+	waypoint8->m_position = m_gridArray[10][2].m_position;
+	SearchWaypoint* waypoint9 = new SearchWaypoint(10);
+	waypoint9->m_position = m_gridArray[10][10].m_position;
+
+	// Add waypoint 1's connections
+	waypoint1->adjacentWaypoints.push_back(waypoint2);
+	waypoint1->adjacentWaypoints.push_back(waypoint8);
+	waypoint1->adjacentWaypoints.push_back(waypoint9);
+
+	// Add waypoint 2's connections
+	waypoint2->adjacentWaypoints.push_back(waypoint1);
+	waypoint2->adjacentWaypoints.push_back(waypoint3);
+	waypoint2->adjacentWaypoints.push_back(waypoint9);
+
+	// Add waypoint 3's connections
+	waypoint3->adjacentWaypoints.push_back(waypoint2);
+	waypoint3->adjacentWaypoints.push_back(waypoint4);
+	waypoint3->adjacentWaypoints.push_back(waypoint9);
+
+	// Add waypoint 4's connections
+	waypoint4->adjacentWaypoints.push_back(waypoint3);
+	waypoint4->adjacentWaypoints.push_back(waypoint5);
+	waypoint4->adjacentWaypoints.push_back(waypoint9);
+
+	// Add waypoint 5's connections
+	waypoint5->adjacentWaypoints.push_back(waypoint4);
+	waypoint5->adjacentWaypoints.push_back(waypoint6);
+	waypoint5->adjacentWaypoints.push_back(waypoint9);
+
+	// Add waypoint 6's connections
+	waypoint6->adjacentWaypoints.push_back(waypoint5);
+	waypoint6->adjacentWaypoints.push_back(waypoint7);
+	waypoint6->adjacentWaypoints.push_back(waypoint9);
+
+	// Add waypoint 7's connections
+	waypoint7->adjacentWaypoints.push_back(waypoint6);
+	waypoint7->adjacentWaypoints.push_back(waypoint8);
+	waypoint7->adjacentWaypoints.push_back(waypoint9);
+
+	// Add waypoint 8's connections
+	waypoint8->adjacentWaypoints.push_back(waypoint1);
+	waypoint8->adjacentWaypoints.push_back(waypoint7);
+	waypoint8->adjacentWaypoints.push_back(waypoint9);
+
+	// Add waypoint 9's connections
+	waypoint9->adjacentWaypoints.push_back(waypoint1);
+	waypoint9->adjacentWaypoints.push_back(waypoint2);
+	waypoint9->adjacentWaypoints.push_back(waypoint3);
+	waypoint9->adjacentWaypoints.push_back(waypoint4);
+	waypoint9->adjacentWaypoints.push_back(waypoint5);
+	waypoint9->adjacentWaypoints.push_back(waypoint6);
+	waypoint9->adjacentWaypoints.push_back(waypoint7);
+	waypoint9->adjacentWaypoints.push_back(waypoint8);
+
+	// Add the search waypoints to the grid's search waypoint list
+	m_searchWaypoints.push_back(waypoint9);
+	m_searchWaypoints.push_back(waypoint8);
+	m_searchWaypoints.push_back(waypoint7);
+	m_searchWaypoints.push_back(waypoint6);
+	m_searchWaypoints.push_back(waypoint5);
+	m_searchWaypoints.push_back(waypoint4);
+	m_searchWaypoints.push_back(waypoint3);
+	m_searchWaypoints.push_back(waypoint2);
+	m_searchWaypoints.push_back(waypoint1);
 }
 
 // Spacially indexes the grid map to return the grid cell of the inputted vector position
@@ -189,7 +278,7 @@ void Grid::SetTerrain(Vec3 startIndex, Vec3 endIndex)
 	}
 }
 
-// Visually represent the cells in the grid
+// Visually represent the cells in the grid (and the search waypoints if in debug mode)
 void Grid::Draw(bool debugMode)
 {
 	for (int row = 0; row < NUM_CELLS; row++)
@@ -199,6 +288,15 @@ void Grid::Draw(bool debugMode)
 			m_gridArray[row][column].Draw(debugMode);
 			// Draw the edges of the cell
 			DrawRectangleLines(m_gridArray[row][column].m_position.x - (CELL_SIZE / 2), m_gridArray[row][column].m_position.y - (CELL_SIZE / 2), CELL_SIZE, CELL_SIZE, BLACK);
+		}
+	}
+
+	// If in debug mode, draw the search waypoints
+	if (debugMode)
+	{
+		for (auto waypoint : m_searchWaypoints)
+		{
+			waypoint->Draw();
 		}
 	}
 }

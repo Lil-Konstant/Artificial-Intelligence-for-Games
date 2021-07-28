@@ -1,6 +1,6 @@
 #pragma once
 #include "Agent.h"
-#include <iostream>
+#include "SearchWaypoint.h"
 
 namespace DecisionTree
 {
@@ -10,7 +10,7 @@ namespace DecisionTree
 		virtual bool conditionCheck(Agent* agent) = 0;
 	};
 
-	// Returns true if the agents target is within the agents range
+	// Returns true if the agents target is within the agents detection radius
 	class InRange : public Condition
 	{
 		virtual bool conditionCheck(Agent* agent)
@@ -21,13 +21,22 @@ namespace DecisionTree
 		}
 	};
 	
-	// Returns true if the agent has more troop strength than its target
+	// Returns true if the agent has at least 2 more troop strength than its target
 	class IsStronger : public Condition
 	{
 		virtual bool conditionCheck(Agent* agent)
 		{
 			// Compare the unit count of the player with that of the AI
-			return agent->GetUnitCount() > agent->m_target->GetUnitCount() + 2;
+			return agent->GetUnitCount() >= agent->m_target->GetUnitCount() + 2;
+		}
+	};
+
+	// Returns true if there are resources left on the map
+	class ResourcesRemain : public Condition
+	{
+		virtual bool conditionCheck(Agent* agent)
+		{
+			return agent->m_resourceList.size() > 0;
 		}
 	};
 
@@ -44,7 +53,6 @@ namespace DecisionTree
 	public:
 		virtual void makeDecision(Agent* agent)
 		{
-			std::cout << "I AM PURSUING" << std::endl;
 			Cell* currentCell = agent->m_currentCell;
 			Cell* targetCell = agent->m_target->m_currentCell;
 
@@ -63,18 +71,55 @@ namespace DecisionTree
 	// Decision leaf node that executes the agents Flee logic
 	class FleeAction : public Decision
 	{
+	private:
+		SearchWaypoint* m_currentWaypoint = nullptr;
+
+		// The Game Manager intialises and connects waypoints on construction
+		std::vector<SearchWaypoint*> m_waypoints;
+
 	public:
 		virtual void makeDecision(Agent* agent)
 		{
-			std::cout << "I AM FLEEING" << std::endl;
+			// Fill the search actions waypoint list with the grids waypoints once
+			if (m_waypoints.size() == 0)
+				m_waypoints = agent->m_grid->m_searchWaypoints;
 
-			// Create a vector that points away from the target, to the edge of this agents flee radius
-			Vec3 fleeDirection = agent->m_position - agent->m_target->m_position;
-			fleeDirection = fleeDirection.GetNormalised() * agent->m_detectionRadius;
-			// Get the cell at this position for the agent to path to
-			Cell* fleeCell = agent->m_grid->getCell(agent->m_position + fleeDirection);
+			// If we have no fleeing target, iterate through the waypoints and find the one that is in the most opposite direction to the agents target
+			if (m_currentWaypoint == nullptr)
+			{
+				m_currentWaypoint = m_waypoints.front();
+				float currentAngleBetween = 0;
+				for (auto waypoint : m_waypoints)
+				{
+					// Do not calculate waypoints the agent is sitting on due to rounding errors (0 degrees becomes 180)
+					if (agent->m_grid->getCell(agent->m_position) == agent->m_grid->getCell(waypoint->m_position))
+					{
+						continue;
+					}
 
-			agent->m_path = agent->m_grid->aStar(agent->m_grid->getCell(agent->m_position), fleeCell);
+					// Calculate the angle between this waypoint and the target
+					Vec3 targetDisplacement = (agent->m_target->m_position - agent->m_position).GetNormalised();
+					Vec3 waypointDisplacement = (waypoint->m_position - agent->m_position).GetNormalised();
+					float angleBetween = acos(targetDisplacement.Dot(waypointDisplacement));
+
+					// If the angle between is bigger than that of the current flee waypoint, set this waypoint as the new flee waypoint
+					if (angleBetween > currentAngleBetween)
+					{
+						m_currentWaypoint = waypoint;
+						currentAngleBetween = angleBetween;
+					}
+				}
+			}
+
+			// Set the agents path to be from itself to its current flee waypoint cell
+			agent->m_path = agent->m_grid->aStar(agent->m_grid->getCell(agent->m_position), agent->m_grid->getCell(m_currentWaypoint->m_position));
+
+			// If the agent has reached the waypoint cell, set current waypoint to nullptr to recalculate a new waypoint next update
+			if (agent->m_grid->getCell(agent->m_position) == agent->m_grid->getCell(m_currentWaypoint->m_position))
+			{
+				// Reset the current waypoint to null so that a new flee point is found next update
+				m_currentWaypoint = nullptr;
+			}
 		}
 	};
 
@@ -82,67 +127,49 @@ namespace DecisionTree
 	class SearchAction : public Decision
 	{
 	private:
-		Cell* m_currentWaypointCell = nullptr;
+		SearchWaypoint* m_currentWaypoint = nullptr;
+
+		// The Game Manager intialises and connects search waypoints on construction
+		std::vector<SearchWaypoint*> m_searchWaypoints;
 
 	public:
 		virtual void makeDecision(Agent* agent)
 		{
-			std::cout << "I AM SEARCHING" << std::endl;
+			// Fill the search actions waypoint list with the grids waypoints once
+			if (m_searchWaypoints.size() == 0)
+				m_searchWaypoints = agent->m_grid->m_searchWaypoints;
 
 			// If a search waypoint is yet to be set, determine which is closest and set it as the target waypoint
-			if (m_currentWaypointCell == nullptr)
+			if (m_currentWaypoint == nullptr)
 			{
-				// Find the waypoint closest to the agent, starting with the top left as the current best guess
-				m_currentWaypointCell = agent->m_grid->topLeftWaypoint;
-				float currentShortest = agent->m_position.DistanceSqr(m_currentWaypointCell->m_position);
-
-				// If the top right waypoint is closer
-				if (agent->m_position.DistanceSqr(agent->m_grid->topRightWaypoint->m_position) < currentShortest)
+				m_currentWaypoint = m_searchWaypoints.front();
+				for (auto waypoint : m_searchWaypoints)
 				{
-					m_currentWaypointCell = agent->m_grid->topRightWaypoint;
-					currentShortest = agent->m_position.DistanceSqr(m_currentWaypointCell->m_position);
-				}
-				// If the bottom left waypoint is closer
-				if (agent->m_position.DistanceSqr(agent->m_grid->bottomLeftWaypoint->m_position) < currentShortest)
-				{
-					m_currentWaypointCell = agent->m_grid->bottomLeftWaypoint;
-					currentShortest = agent->m_position.DistanceSqr(m_currentWaypointCell->m_position);
-				}
-				// If the bottom right waypoint is closer
-				if (agent->m_position.DistanceSqr(agent->m_grid->bottomRightWaypoint->m_position) < currentShortest)
-				{
-					m_currentWaypointCell = agent->m_grid->bottomRightWaypoint;
-					currentShortest = agent->m_position.DistanceSqr(m_currentWaypointCell->m_position);
+					// If this waypoint is closer than the current closest, set it as the new current closest
+					if (waypoint->m_position.Distance(agent->m_position) < m_currentWaypoint->m_position.Distance(agent->m_position))
+					{
+						m_currentWaypoint = waypoint;
+					}
 				}
 			}
 
-			// If we are at the waypoint cell, update it to the appropriate next waypoint (rotating clockwise)
-			if (agent->m_grid->getCell(agent->m_position) == m_currentWaypointCell)
+			// If we are at the waypoint cell, search through this waypoints connections and find the waypoint that is currently closest to this agents target
+			if (agent->m_position.Distance(m_currentWaypoint->m_position) < 0.5f)
 			{
-				// If we have reached the top left waypoint, set our current waypoint to be the top right waypoint
-				if (m_currentWaypointCell == agent->m_grid->topLeftWaypoint)
+				SearchWaypoint* currentClosest = m_currentWaypoint->adjacentWaypoints.front();
+				for (auto adjacentWaypoint : m_currentWaypoint->adjacentWaypoints)
 				{
-					m_currentWaypointCell = agent->m_grid->topRightWaypoint;
+					// If this adjacent waypoint is closer than the current closest, set it as the new current closest
+					if (adjacentWaypoint->m_position.Distance(agent->m_target->m_position) < currentClosest->m_position.Distance(agent->m_target->m_position))
+					{
+						currentClosest = adjacentWaypoint;
+					}
 				}
-				// If we have reached the top right waypoint, set our current waypoint to be the bottom right waypoint
-				else if (m_currentWaypointCell == agent->m_grid->topRightWaypoint)
-				{
-					m_currentWaypointCell = agent->m_grid->bottomRightWaypoint;
-				}
-				// If we have reached the bottom right waypoint, set our current waypoint to be the bottom left waypoint
-				else if (m_currentWaypointCell == agent->m_grid->bottomRightWaypoint)
-				{
-					m_currentWaypointCell = agent->m_grid->bottomLeftWaypoint;
-				}
-				// If we have reached the bottom left waypoint, set our current waypoint to be the top left waypoint
-				else if (m_currentWaypointCell == agent->m_grid->bottomLeftWaypoint)
-				{
-					m_currentWaypointCell = agent->m_grid->topLeftWaypoint;
-				}
+				m_currentWaypoint = currentClosest;
 			}
 
 			// Set the agents path to be from itself to its current waypoint cell
-			agent->m_path = agent->m_grid->aStar(agent->m_grid->getCell(agent->m_position), m_currentWaypointCell);
+			agent->m_path = agent->m_grid->aStar(agent->m_grid->getCell(agent->m_position), agent->m_grid->getCell(m_currentWaypoint->m_position));
 		}
 	};
 	
@@ -152,7 +179,6 @@ namespace DecisionTree
 	public:
 		virtual void makeDecision(Agent* agent)
 		{
-			std::cout << "I AM GATHERING" << std::endl;
 			if (agent->m_resourceList.size() > 0)
 			{
 				Resource* closestResource = agent->m_resourceList.front();

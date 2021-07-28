@@ -27,6 +27,6 @@ public:
 	Cell* m_previous = nullptr;
 	bool m_traversable = true;
 
-	// Debug
-	int CELL_SIZE = GetScreenHeight() / 20;
+	// Cell size is ScreenHeight(or width) / Number of Cells calculated in grid class
+	static int CELL_SIZE;
 };

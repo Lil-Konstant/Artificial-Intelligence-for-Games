@@ -1,5 +1,8 @@
 #include "Cell.h"
 
+// Initialise the static cell size as 0, it will be set during grid construction as the size of the screen is needed for the calculation
+int Cell::CELL_SIZE = 0;
+
 // Draw this cell as a black dot (with a yellow inline if selected), and draw the edge connections of this cell (yellow if along the enemy/player path)
 void Cell::Draw(bool debugMode, bool selected, Cell* target)
 {
@@ -14,8 +17,6 @@ void Cell::Draw(bool debugMode, bool selected, Cell* target)
 		// If the cell is a part of the enemy or player path, draw it's centre as yellow and draw the path edges as yellow
 		if (selected)
 		{
-			//DrawCircle(m_position.x, m_position.y, 3, YELLOW);
-
 			// Draw the target edge connection in yellow
 			for (auto edge : m_edges)
 			{

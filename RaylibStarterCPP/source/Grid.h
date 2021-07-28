@@ -3,6 +3,7 @@
 #include "MathsClasses.h"
 #include "Cell.h"
 #include "Edge.h"
+#include "SearchWaypoint.h"
 #include <vector>
 #include <queue>
 #include <algorithm>
@@ -14,23 +15,22 @@ class Grid
 public:
 	Grid();
 	~Grid();
+	
 	void InitialiseEdges();
-
-	void Draw(bool debugMode);
-
+	void InitialiseWaypoints();
+	
 	void SetTerrain(Vec3 startIndex, Vec3 endIndex);
 
 	Cell* getCell(Vec3 position);
 	std::vector<Cell*> aStar(Cell* startCell, Cell* endCell);
 
-	static const int NUM_CELLS = 20;
-	int CELL_SIZE = GetScreenHeight() / NUM_CELLS;
+	void Draw(bool debugMode);
 
-	// Construct the 4 search waypoints near the corners of the map
-	Cell* topLeftWaypoint = getCell(Vec3(GetScreenWidth() / 10, GetScreenHeight() / 10, 0));
-	Cell* topRightWaypoint = getCell(Vec3(GetScreenWidth() - (GetScreenWidth() / 10), GetScreenHeight() / 10, 0));
-	Cell* bottomRightWaypoint = getCell(Vec3(GetScreenWidth() - (GetScreenWidth() / 10), GetScreenHeight() - (GetScreenHeight() / 10), 0));
-	Cell* bottomLeftWaypoint = getCell(Vec3(GetScreenWidth() / 10, GetScreenHeight() - (GetScreenHeight() / 10), 0));
+	// Number of cells along the height and width of the grid
+	static const int NUM_CELLS = 20;
+	int CELL_SIZE;
+
+	std::vector<SearchWaypoint*> m_searchWaypoints;
 
 private:
 	Cell m_gridArray[NUM_CELLS][NUM_CELLS];
