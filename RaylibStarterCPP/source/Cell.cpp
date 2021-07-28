@@ -14,7 +14,7 @@ void Cell::Draw(bool debugMode, bool selected, Cell* target)
 		// If the cell is a part of the enemy or player path, draw it's centre as yellow and draw the path edges as yellow
 		if (selected)
 		{
-			DrawCircle(m_position.x, m_position.y, 3, YELLOW);
+			//DrawCircle(m_position.x, m_position.y, 3, YELLOW);
 
 			// Draw the target edge connection in yellow
 			for (auto edge : m_edges)

@@ -109,7 +109,7 @@ void GameManager::UpdateEnemyArmy(float deltaTime)
         // If the enemy leader was killed by this unit but there are more enemies left
         if (m_playerLeader->m_leaderDeleted == true)
         {
-            // Delete the unit and repoint the enemy leader pointer
+            // Delete the unit and repoint the player leader pointer
             Player* temp = m_playerLeader->m_leader;
             delete m_playerLeader;
             m_playerLeader = temp;
@@ -117,8 +117,8 @@ void GameManager::UpdateEnemyArmy(float deltaTime)
 
         m_enemyLeader->m_enemyUnits[i]->Update(deltaTime);
 
-        // If this unit is in aggro range of the player leader, change the player leader's army into attack state
-        if (m_enemyLeader->m_position.Distance(m_playerLeader->m_position) < m_playerLeader->m_aggroRange && m_playerLeader->m_state == Agent::State::STATE_MOVE)
+        // If this unit is in aggro range of the enemy leader, change the enemy leader's army into attack state
+        if (m_enemyLeader->m_enemyUnits[i]->m_position.Distance(m_playerLeader->m_position) < m_playerLeader->m_aggroRange && m_playerLeader->m_state == Agent::State::STATE_MOVE)
         {
             m_playerLeader->m_state = Agent::State::STATE_ATTACK;
         }
@@ -131,53 +131,32 @@ void GameManager::WinSequence(WinState winState)
     switch (winState)
     {
     case WinState::STATE_PLAYER_WIN:
-        // Player win sequence
-        while (true)
-        {
-            BeginDrawing;
-            ClearBackground(DARKBLUE);
-            DrawText(TextFormat("Player 1 Wins!"), 200, 160, 40, BLUE);
-            EndDrawing;
-            if (IsKeyPressed(KEY_ESCAPE)) { break; }
-        }
+        m_debugMode = false;
+        BeginDrawing;
+        ClearBackground(DARKGREEN);
+        DrawText(TextFormat("You Win!"), m_screenSize / 2 - 100, 160, 60, GREEN);
+        EndDrawing;
         break;
     case WinState::STATE_ENEMY_WIN:
-        // Enemy win sequence
-        while (true)
-        {
-            BeginDrawing;
-            ClearBackground(DARKBLUE);
-            DrawText(TextFormat("Player 1 Wins!"), 200, 160, 40, BLUE);
-            EndDrawing;
-            if (IsKeyPressed(KEY_ESCAPE)) { break; }
-        }
+        m_debugMode = false;
+        BeginDrawing;
+        ClearBackground(DARKGREEN);
+        DrawText(TextFormat("The Enemy Wins!"), m_screenSize / 2 - 250, 160, 60, RED);
+        EndDrawing;
         break;
     }
 }
 
+// Calls draw on the grid which draws every cell on the map (and their connections if in debug mode), and then
+// calls draw on every unit in both the player and enemy armies
 void GameManager::Draw()
 {
     BeginDrawing();
     ClearBackground(DARKGREEN);
 
+    // Draw the grid, if in debug mode draw the cells centres and their edges
     m_grid->Draw(m_debugMode);
     DrawFPS(10, 10);
-
-    // Draw out the player and enemies paths
-    for (int i = 0; i < m_playerLeader->m_path.size(); i++)
-    {
-        if (i + 1 < (int)m_playerLeader->m_path.size())
-            m_playerLeader->m_path[i]->Draw(m_debugMode, true, m_playerLeader->m_path[i + 1]);
-        else
-            m_playerLeader->m_path[i]->Draw(m_debugMode, true, m_playerLeader->m_path[i]);
-    }
-    for (int i = 0; i < m_enemyLeader->m_path.size(); i++)
-    {
-        if (i + 1 < (int)m_enemyLeader->m_path.size())
-            m_enemyLeader->m_path[i]->Draw(m_debugMode, true, m_enemyLeader->m_path[i + 1]);
-        else
-            m_enemyLeader->m_path[i]->Draw(m_debugMode, true, m_enemyLeader->m_path[i]);
-    }
 
     // Draw every unit in the player army
     for (auto unit : m_playerLeader->m_playerUnits)
@@ -189,6 +168,7 @@ void GameManager::Draw()
     EndDrawing();
 }
 
+// 
 void GameManager::DebugMechanics()
 {
     // Paint the cell as untraversable
@@ -209,9 +189,5 @@ void GameManager::DebugMechanics()
     {
         m_enemyLeader->AddUnit();
     }
-    // Toggle debug mode
-    if (IsKeyPressed(KEY_SPACE))
-    {
-        m_debugMode = !m_debugMode;
-    }
+    
 }

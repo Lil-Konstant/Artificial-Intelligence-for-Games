@@ -22,14 +22,14 @@ bool Agent::SeekBehaviour(Cell* target)
 	float distanceToTarget = desiredVelocity.Magnitude();
 
 	// Distance is close enough so return true as we have reached the target cell
-	if (distanceToTarget < 10)
+	if (distanceToTarget < 0.5f)
 	{
 		return true;
 	}
 	// As long as the distance is not 0, then normalise the vector and scale it by its move speed
 	else
 	{
-		desiredVelocity = desiredVelocity.GetNormalised() * m_maxSpeed;
+		desiredVelocity = desiredVelocity.GetNormalised() * m_currentMoveSpeed;
 		// Add the steering force to this agents current force and return false as we are yet to reach the front cell in the path
 		AddForce(desiredVelocity - m_velocity);
 		return false;
@@ -51,7 +51,7 @@ bool Agent::SeekBehaviour(Agent* target)
 	// As long as we are not in attack range, then normalise the vector and scale it by the agents move speed
 	else
 	{
-		desiredVelocity = desiredVelocity.GetNormalised() * m_maxSpeed;
+		desiredVelocity = desiredVelocity.GetNormalised() * m_currentMoveSpeed;
 		// Add the steering force to this agents current force
 		AddForce(desiredVelocity - m_velocity);
 		// Return false as this agent is not yet within attack range of the inputted target
@@ -73,12 +73,12 @@ bool Agent::ArrivalBehaviour(Cell* target)
 	// If the target is within the arrival radius, scale the velocity down by the distance
 	else if (distanceToTarget < m_arrivalRadius)
 	{
-		desiredVelocity = desiredVelocity.GetNormalised() * m_maxSpeed * ((distanceToTarget * 2) / m_arrivalRadius);
+		desiredVelocity = desiredVelocity.GetNormalised() * m_currentMoveSpeed * ((distanceToTarget * 2) / m_arrivalRadius);
 	}
 	// Other wise the velocity is the normal seek velocity
 	else
 	{
-		desiredVelocity = desiredVelocity.GetNormalised() * m_maxSpeed;
+		desiredVelocity = desiredVelocity.GetNormalised() * m_currentMoveSpeed;
 	}
 
 	// Add the steering force to this agents current force and return false as we are yet to reach the front cell in the path
@@ -114,49 +114,50 @@ bool Agent::TakeDamage(float damage)
 	return m_health <= 0;
 }
 
+/*
 void Agent::UpdateMotion(float deltaTime)
 {
 	// Add Force multiplied by delta time to Velocity, truncate with the max speed to not over speed
-	m_velocity = Truncate(m_velocity + (m_force * deltaTime), m_maxSpeed);
+	m_velocity = Truncate(m_velocity + (m_force * deltaTime), m_currentMoveSpeed);
+	m_velocity = Truncate((m_force * deltaTime * m_currentMoveSpeed), m_currentMoveSpeed);
 	// Add Velocity multiplied by delta time to Position
 	m_position = m_position + (m_velocity * deltaTime);
 	// Scale the velocity down according to the friction
 	m_velocity = m_velocity * m_frictionModifier;
 }
+*/
+
+// UpdateMoveSpeed will scale the agents current maximum move speed inversely proportional to its current army size
+void Agent::UpdateMoveSpeed()
+{
+	float scaledSpeed = m_maxSpeed * (1 / (0.2f * (float)GetUnitCount()));
+	m_currentMoveSpeed = scaledSpeed < m_maxSpeed ? scaledSpeed : m_maxSpeed;
+}
 
 void Agent::FollowPath()
 {
-	// If there is a path for the player agent to follow
+	// If there is at least two nodes in the path
+	if (m_path.size() > 1)
+	{
+		// Some vector maths to stop agents from moving backwards if they are closer to their second path node
+		// Draw a vector from the first node to the second node
+		Vec3 nodeDisplacement = (m_path[1]->m_position - m_path[0]->m_position).GetNormalised();
+		Vec3 agentDisplacement = (m_position - m_path[0]->m_position).GetNormalised();
+		float angle = acos(nodeDisplacement.Dot(agentDisplacement));
+
+		if (angle < PI / 6)
+		{
+			m_path.erase(m_path.begin());
+		}
+	}
+
+	// If there is still a path for the agent to follow after possibly erasing the first node
 	if (m_path.size() > 0)
 	{
-		// If the front cell is the last cell in the path, use arrival behaviour
-		if (m_path.size() == 1)
+		// Attempts to seek to the first node in the agents path, returns true if that node has now been reached
+		if (SeekBehaviour(m_path.front()))
 		{
-			// If the front cell has now been reached, pop it off the path list
-			if (ArrivalBehaviour(m_path.front()))
-			{
-				m_path.erase(m_path.begin());
-			}
-		}
-		// Otherwise seek towards the front cell in the path list
-		else
-		{
-			// Some vector maths to stop agents from moving backwards if they are closer to their second path node
-			// Draw a vector from the first node to the second node
-			Vec3 nodeDisplacement = (m_path[1]->m_position - m_path[0]->m_position).GetNormalised();
-			Vec3 agentDisplacement = (m_position - m_path[0]->m_position).GetNormalised();
-			float angle = acos(nodeDisplacement.Dot(agentDisplacement));
-
-			if (angle < PI / 4)
-			{
-				m_path.erase(m_path.begin());
-			}
-
-			// If the front cell has now been reached, pop it off the path list
-			if (SeekBehaviour(m_path.front()))
-			{
-				m_path.erase(m_path.begin());
-			}
+			m_path.erase(m_path.begin());
 		}
 	}
 }

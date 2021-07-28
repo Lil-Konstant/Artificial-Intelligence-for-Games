@@ -37,6 +37,8 @@ public:
     TrueFalseDecision* m_rootDecision;
     float decisionTimer = 0.5f;
 
+    void UpdateMotion(float deltaTime) override;
+
     bool TryCollision(GameObject* other) override { return true; }
 
     int GetUnitCount() override { return m_enemyUnits.size(); }

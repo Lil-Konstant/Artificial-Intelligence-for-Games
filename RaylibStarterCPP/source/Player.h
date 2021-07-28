@@ -31,6 +31,8 @@ public:
 	void AddUnit() override;
 	void KillUnit() override;
 
+	void UpdateMotion(float deltaTime) override;
+
 	bool TryCollision(GameObject* other) override { return true; }
 
 	int GetUnitCount() override { return m_playerUnits.size(); }

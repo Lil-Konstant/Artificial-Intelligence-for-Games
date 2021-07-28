@@ -40,6 +40,9 @@ void EnemyAgent::Update(float deltaTime)
 	// Attempt to collect a resource if one is found in this enemy agents cell
 	AttemptCollectResource();
 
+	// Update the armies movespeed (in case units have been added to slow the army down)
+	UpdateMoveSpeed();
+
 	// Traverse the decision tree every timer tick to decide on the enemy agent's state
 	decisionTimer -= deltaTime;
 	if (decisionTimer <= 0 && this == m_leader)
@@ -59,6 +62,7 @@ void EnemyAgent::Update(float deltaTime)
 		FollowPath();
 		break;
 	case State::STATE_ATTACK:
+		m_path.clear();
 		AttackSequence(deltaTime);
 		break;
 	}
@@ -121,8 +125,6 @@ void EnemyAgent::AddUnit()
 // "Kills" this enemy unit and removes all references of it
 void EnemyAgent::KillUnit()
 {
-	std::cout << "ENEMY DEAD LOL" << std::endl;
-
 	// Remove this unit from the enemyUnits list
 	m_enemyUnits.erase(std::find(m_enemyUnits.begin(), m_enemyUnits.end(), this));
 
@@ -136,6 +138,8 @@ void EnemyAgent::KillUnit()
 	// If killing the leader unit, replace it with the next in charge
 	if (this == m_leader)
 	{
+		// Transfer the leaders target to the new leader
+		m_enemyUnits.front()->m_target = m_leader->m_target;
 		// Repoint the enemy armies leader pointer to the next in charge
 		m_leader = m_enemyUnits.front();
 
@@ -195,8 +199,45 @@ void EnemyAgent::AttackSequence(float deltaTime)
 	}
 }
 
+void EnemyAgent::UpdateMotion(float deltaTime)
+{
+	if (this == m_leader)
+	{
+		// Set the velocity equal to the force for linear movement along the path
+		m_velocity = Truncate((m_force * deltaTime * m_currentMoveSpeed), m_currentMoveSpeed);
+	}	
+	else
+	{
+		// Add Force multiplied by delta time to Velocity, truncate with the max speed to not over speed
+		m_velocity = Truncate(m_velocity + (m_force * deltaTime), m_currentMoveSpeed);
+	}
+
+	// Add Velocity multiplied by delta time to Position
+	m_position = m_position + (m_velocity * deltaTime);
+	// Scale the velocity down according to the friction
+	m_velocity = m_velocity * m_frictionModifier;
+}
+
 void EnemyAgent::Draw()
 {
-	DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, RED);
+	if (this == m_leader)
+	{
+		// Draw out the enemy's path
+		if (m_path.size() > 0)
+			DrawLine(m_position.x, m_position.y, m_path.front()->m_position.x, m_path.front()->m_position.y, YELLOW);
+		for (int i = 0; i < m_path.size(); i++)
+		{
+			if (i + 1 < (int)m_path.size())
+				m_path[i]->Draw(false, true, m_path[i + 1]);
+			else
+				m_path[i]->Draw(false, true, m_path[i]);
+		}
+
+		// Draw the enemy leader in black
+		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, BLACK);
+	}
+	else
+		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, RED);
+
 	DrawPolyLines({ m_position.x, m_position.y }, 6, m_radius, 0, BLACK);
 }

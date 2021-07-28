@@ -32,6 +32,9 @@ void Player::Update(float deltaTime)
 	// Attempt to collect a resource if one is found in this player agents cell
 	AttemptCollectResource();
 
+	// Update the armies movespeed (in case units have been added to slow the army down)
+	UpdateMoveSpeed();
+
 	// Reset the force for this frame to 0
 	m_force = Vec3(0, 0, 0);
 
@@ -45,11 +48,13 @@ void Player::Update(float deltaTime)
 			Vec3 mousePosition = Vec3(GetMouseX(), GetMouseY(), 0);
 			Cell* destinationCell = m_grid->getCell(mousePosition);
 
-			m_path = m_grid->aStar(m_currentCell, destinationCell);
+			if (destinationCell->m_traversable)
+				m_path = m_grid->aStar(m_currentCell, destinationCell);
 		}
 		FollowPath();
 		break;
 	case State::STATE_ATTACK:
+		m_path.clear();
 		AttackSequence(deltaTime);
 		break;
 	}
@@ -113,8 +118,6 @@ void Player::AddUnit()
 // "Kills" this player unit and removes all references of it
 void Player::KillUnit()
 {
-	std::cout << "PLAYER DEAD LOL" << std::endl;
-
 	// Remove this unit from the playerUnits list
 	m_playerUnits.erase(std::find(m_playerUnits.begin(), m_playerUnits.end(), this));
 
@@ -128,10 +131,12 @@ void Player::KillUnit()
 	// If killing the leader unit, replace it with the next in charge
 	if (this == m_leader)
 	{
-		// Repoint the enemy armies leader pointer to the next in charge
+		// Transfer the leaders target to the new leader
+		m_playerUnits.front()->m_target = m_leader->m_target;
+		// Repoint the player armies leader pointer to the new leader
 		m_leader = m_playerUnits.front();
 
-		// Replace the player leaders target pointer with the new enemy leader
+		// Replace the enemy leaders target pointer with the new player leader
 		m_target->m_target = m_leader;
 
 		// Return before deleting this as it will invalidate the pointer in the main game loop (delete it there instead)
@@ -187,11 +192,44 @@ void Player::AttackSequence(float deltaTime)
 	}
 }
 
+void Player::UpdateMotion(float deltaTime)
+{
+	if (this == m_leader)
+	{
+		// Set the velocity equal to the force for linear movement along the path
+		m_velocity = Truncate((m_force * deltaTime * m_currentMoveSpeed), m_currentMoveSpeed);
+	}
+	else
+	{
+		// Add Force multiplied by delta time to Velocity, truncate with the max speed to not over speed
+		m_velocity = Truncate(m_velocity + (m_force * deltaTime), m_currentMoveSpeed);
+	}
+
+	// Add Velocity multiplied by delta time to Position
+	m_position = m_position + (m_velocity * deltaTime);
+	// Scale the velocity down according to the friction
+	m_velocity = m_velocity * m_frictionModifier;
+}
+
 // Draw the player as a polygon and the mouse follow target
 void Player::Draw()
 {
 	if (this == m_leader)
+	{
+		// Draw out the player's path
+		if (m_path.size() > 0)
+			DrawLine(m_position.x, m_position.y, m_path.front()->m_position.x, m_path.front()->m_position.y, YELLOW);
+		for (int i = 0; i < m_path.size(); i++)
+		{
+			if (i + 1 < (int)m_path.size())
+				m_path[i]->Draw(false, true, m_path[i + 1]);
+			else
+				m_path[i]->Draw(false, true, m_path[i]);
+		}
+
+		// Draw the player leader in yellow
 		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, YELLOW);
+	}
 	else
 		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, PURPLE);
 	

@@ -22,7 +22,7 @@ public:
 	Agent* m_target = nullptr;
 
 	void AttemptCollectResource();
-	void UpdateMotion(float deltaTime);
+	virtual void UpdateMotion(float deltaTime) = 0;
 	virtual Agent* FindClosest(Agent* agent) = 0;
 
 	virtual void AddUnit() = 0;
@@ -40,9 +40,9 @@ public:
 	float m_health = 100;
 	float m_damage = 10;
 	// Range for switching to attack state on a target
-	float m_aggroRange = 200;
+	float m_aggroRange = 20;
 	// Range for being able to actually damage a target
-	float m_attackRange = 0.1f * m_aggroRange;
+	float m_attackRange = 0.5f * m_aggroRange;
 	float m_attackCooldown = 1;
 
 	// Radius for AI agents player-in-range checks
@@ -69,12 +69,19 @@ protected:
 	virtual bool SeparationBehaviour() = 0;
 	virtual void AttackSequence(float deltaTime) = 0;
 	
+	void UpdateMoveSpeed();
+
 	void AddForce(Vec3 force) { m_force = force + m_force; }
 	Vec3 Truncate(Vec3 vector, float truncateMax);
 
 	float m_frictionModifier = 0.99;
+	
 	float m_maxSpeed = 50;
+	// Use to scale move speed down with unit count
+	float m_currentMoveSpeed = 50;
+	
 	float m_cohesionForce = 5;
+	
 	float m_separationForce = 30;
 	float m_arrivalRadius = 100;
 };
