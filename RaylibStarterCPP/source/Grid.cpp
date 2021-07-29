@@ -12,6 +12,11 @@ Grid::~Grid()
 
 }
 
+// InitialiseEdges iterates through every cell in the array, and for each cell it first sets the cells position as the centre
+// of its grid position, and then connects up the corresponding edges to this cell. Cells are connected orthogonally and diagonally,
+// giving a cell a maximum of 8 possible edges. Edges that lead to untraversable cells are not connected. Orthogonal edges are given
+// of traversal cost of 1, and diagonal edges are given a traversal cost of 1.4. This function is very ugly and inefficient, but as 
+// it is only called once on initialisation it does not effect runtime performance.
 void Grid::InitialiseEdges()
 {
 	for (int row = 0; row < NUM_CELLS; row++)
@@ -21,53 +26,53 @@ void Grid::InitialiseEdges()
 			// Make the position of the cell its centre
 			m_gridArray[row][column].m_position = Vec3((column * CELL_SIZE) + (CELL_SIZE / 2), (row * CELL_SIZE) + (CELL_SIZE / 2), 0);
 
-			// If the cell is traversable, setup its properties
+			// If the cell is traversable, setup its edges
 			if (m_gridArray[row][column].m_traversable)
 			{
 				// Fill this cells edge list accordingly
-				// If the left cell is within the grid array and traversable
+				// If the left cell is within the grid array and traversable, lead an edge to it
 				if (column - 1 >= 0 && m_gridArray[row][column - 1].m_traversable)
 				{
 					Edge left = Edge(&m_gridArray[row][column - 1], 1);
 					m_gridArray[row][column].m_edges.push_back(left);
 				}
-				// If the top left cell is within the grid array and traversable
+				// If the top left cell is within the grid array and traversable, lead an edge to it
 				if (column - 1 >= 0 && row - 1 >= 0 && m_gridArray[row - 1][column - 1].m_traversable)
 				{
 					Edge topLeft = Edge(&m_gridArray[row - 1][column - 1], 1.4f);
 					m_gridArray[row][column].m_edges.push_back(topLeft);
 				}
-				// If the bottom left cell is within the grid array and traversable
+				// If the bottom left cell is within the grid array and traversable, lead an edge to it
 				if (column - 1 >= 0 && row + 1 < NUM_CELLS && m_gridArray[row + 1][column - 1].m_traversable)
 				{
 					Edge bottomLeft = Edge(&m_gridArray[row + 1][column - 1], 1.4f);
 					m_gridArray[row][column].m_edges.push_back(bottomLeft);
 				}
-				// If the right cell is within the grid array and traversable
+				// If the right cell is within the grid array and traversable, lead an edge to it
 				if (column + 1 < NUM_CELLS && m_gridArray[row][column + 1].m_traversable)
 				{
 					Edge right = Edge(&m_gridArray[row][column + 1], 1);
 					m_gridArray[row][column].m_edges.push_back(right);
 				}
-				// If the top right cell is within the grid array and traversable
+				// If the top right cell is within the grid array and traversable, lead an edge to it
 				if (column + 1 < NUM_CELLS && row - 1 >= 0 && m_gridArray[row - 1][column + 1].m_traversable)
 				{
 					Edge topRight = Edge(&m_gridArray[row - 1][column + 1], 1.4f);
 					m_gridArray[row][column].m_edges.push_back(topRight);
 				}
-				// If the bottom right cell is within the grid array and traversable
+				// If the bottom right cell is within the grid array and traversable, lead an edge to it
 				if (column + 1 < NUM_CELLS && row + 1 < NUM_CELLS && m_gridArray[row + 1][column + 1].m_traversable)
 				{
 					Edge bottomRight = Edge(&m_gridArray[row + 1][column + 1], 1.4f);
 					m_gridArray[row][column].m_edges.push_back(bottomRight);
 				}
-				// If the top cell is within the grid array and traversable
+				// If the top cell is within the grid array and traversable, lead an edge to it
 				if (row - 1 >= 0 && m_gridArray[row - 1][column].m_traversable)
 				{
 					Edge top = Edge(&m_gridArray[row - 1][column], 1);
 					m_gridArray[row][column].m_edges.push_back(top);
 				}
-				// If the bottom cell is within the grid array and traversable
+				// If the bottom cell is within the grid array and traversable, lead an edge to it
 				if (row + 1 < NUM_CELLS && m_gridArray[row + 1][column].m_traversable)
 				{
 					Edge bottom = Edge(&m_gridArray[row + 1][column], 1);
@@ -76,31 +81,31 @@ void Grid::InitialiseEdges()
 			}
 		}
 	}
-
-	// Initalise the 9 waypoints and connect them together appropriately
-	InitialiseWaypoints();
 }
 
+// InitialiseWaypoints sets up the 9 waypoints depicted in the TDD, connects them to eachother as they
+// are depicted to be connected, finally adding these waypoints to the grids waypoint list. This function is
+// called by the game manager after the screen has been initialised.
 void Grid::InitialiseWaypoints()
 {
 	// Initialise the 9 waypoints and their positions
-	SearchWaypoint* waypoint1 = new SearchWaypoint(10);
+	Waypoint* waypoint1 = new Waypoint(10);
 	waypoint1->m_position = m_gridArray[2][2].m_position;
-	SearchWaypoint* waypoint2 = new SearchWaypoint(10);
+	Waypoint* waypoint2 = new Waypoint(10);
 	waypoint2->m_position = m_gridArray[2][10].m_position;
-	SearchWaypoint* waypoint3 = new SearchWaypoint(10);
+	Waypoint* waypoint3 = new Waypoint(10);
 	waypoint3->m_position = m_gridArray[2][17].m_position;
-	SearchWaypoint* waypoint4 = new SearchWaypoint(10);
+	Waypoint* waypoint4 = new Waypoint(10);
 	waypoint4->m_position = m_gridArray[10][17].m_position;
-	SearchWaypoint* waypoint5 = new SearchWaypoint(10);
+	Waypoint* waypoint5 = new Waypoint(10);
 	waypoint5->m_position = m_gridArray[17][17].m_position;
-	SearchWaypoint* waypoint6 = new SearchWaypoint(10);
+	Waypoint* waypoint6 = new Waypoint(10);
 	waypoint6->m_position = m_gridArray[17][10].m_position;
-	SearchWaypoint* waypoint7 = new SearchWaypoint(10);
+	Waypoint* waypoint7 = new Waypoint(10);
 	waypoint7->m_position = m_gridArray[17][2].m_position;
-	SearchWaypoint* waypoint8 = new SearchWaypoint(10);
+	Waypoint* waypoint8 = new Waypoint(10);
 	waypoint8->m_position = m_gridArray[10][2].m_position;
-	SearchWaypoint* waypoint9 = new SearchWaypoint(10);
+	Waypoint* waypoint9 = new Waypoint(10);
 	waypoint9->m_position = m_gridArray[10][10].m_position;
 
 	// Add waypoint 1's connections
@@ -154,15 +159,15 @@ void Grid::InitialiseWaypoints()
 	waypoint9->adjacentWaypoints.push_back(waypoint8);
 
 	// Add the search waypoints to the grid's search waypoint list
-	m_searchWaypoints.push_back(waypoint9);
-	m_searchWaypoints.push_back(waypoint8);
-	m_searchWaypoints.push_back(waypoint7);
-	m_searchWaypoints.push_back(waypoint6);
-	m_searchWaypoints.push_back(waypoint5);
-	m_searchWaypoints.push_back(waypoint4);
-	m_searchWaypoints.push_back(waypoint3);
-	m_searchWaypoints.push_back(waypoint2);
-	m_searchWaypoints.push_back(waypoint1);
+	m_waypoints.push_back(waypoint9);
+	m_waypoints.push_back(waypoint8);
+	m_waypoints.push_back(waypoint7);
+	m_waypoints.push_back(waypoint6);
+	m_waypoints.push_back(waypoint5);
+	m_waypoints.push_back(waypoint4);
+	m_waypoints.push_back(waypoint3);
+	m_waypoints.push_back(waypoint2);
+	m_waypoints.push_back(waypoint1);
 }
 
 // Spacially indexes the grid map to return the grid cell of the inputted vector position
@@ -172,19 +177,27 @@ Cell* Grid::getCell(Vec3 position)
 
 	int columnIndex = (int)(position.x / CELL_SIZE);
 	int rowIndex = (int)(position.y / CELL_SIZE);
+
 	if (columnIndex < NUM_CELLS && rowIndex < NUM_CELLS)
 		cell = &m_gridArray[rowIndex][columnIndex];
 	
 	return cell;
 }
 
+// aStar is the A* algorithm implemented for AI and player pathfinding around the map.
+// The function uses the standard A* algorithm to continually query cells with the smallest
+// F-score. Cells currently being evaluated in the open list are sorted using a custom comparison
+// function (shown in the .h file) with the std priority queue created as a min heap. The H-score
+// is calculated using the Euler distance from the queried cell to the end cell. The function returns
+// a vector list of the cells along the shortest path in order of their traversal.
 std::vector<Cell*> Grid::aStar(Cell* startCell, Cell* endCell)
 {
-	// Validate the input
+	// For invalid inputs, return an empty list
 	if (startCell == nullptr || endCell == nullptr)
 	{
 		return std::vector<Cell*>();
 	}
+	// If start and end cells are the same, return a path containing just this cell
 	if (startCell == endCell)
 	{
 		std::vector<Cell*> singleNodePath;
@@ -203,10 +216,9 @@ std::vector<Cell*> Grid::aStar(Cell* startCell, Cell* endCell)
 		}
 	}
 
-	// Create our open and closed lists to track progress
+	// Create our open and closed lists to track progress and push the starting cell onto the open list
 	std::priority_queue<Cell*, std::vector<Cell*>, CellCompare> openList;
 	std::vector<Cell*> closedList;
-
 	openList.push(startCell);
 
 	Cell* currentCell = nullptr;
@@ -218,7 +230,7 @@ std::vector<Cell*> Grid::aStar(Cell* startCell, Cell* endCell)
 		openList.pop();
 		closedList.push_back(currentCell);
 
-		//If the destination cell was added to the closed list, the shortest path has been found
+		//If the destination cell was added to the closed list, the shortest path has been found so break
 		if (currentCell == endCell)
 		{
 			break;
@@ -234,7 +246,7 @@ std::vector<Cell*> Grid::aStar(Cell* startCell, Cell* endCell)
 				float gScore = currentCell->gScore + edge.m_cost;
 				float fScore = gScore + edge.m_target->m_position.Distance(endCell->m_position);
 
-				// If we are yet to visit the target, set its g-score and f-score and update its parent pointer
+				// If we are yet to have previously visited the target, set its g-score and f-score and update its parent pointer
 				if (edge.m_target->gScore == 0 && edge.m_target->fScore == 0 && edge.m_target->m_previous == nullptr)
 				{
 					edge.m_target->gScore = gScore;
@@ -243,7 +255,7 @@ std::vector<Cell*> Grid::aStar(Cell* startCell, Cell* endCell)
 					openList.push(edge.m_target);
 				}
 
-				// Otherwise the cell has been visited, if the new path fScore is shorter, then update the target
+				// Otherwise the cell has been visited, if the new paths fScore is shorter, then update the target
 				else if (fScore < edge.m_target->fScore)
 				{
 					edge.m_target->gScore = gScore;
@@ -267,6 +279,9 @@ std::vector<Cell*> Grid::aStar(Cell* startCell, Cell* endCell)
 	return path;
 }
 
+// SetTerrain is used to set up untraversable "terrain" within the grid map, the function takes
+// a start index and an end index, and sets every cell within the x and y range of the start and end
+// index as untraversable.
 void Grid::SetTerrain(Vec3 startIndex, Vec3 endIndex)
 {
 	for (int row = startIndex.y; row <= endIndex.y; row++)
@@ -278,7 +293,7 @@ void Grid::SetTerrain(Vec3 startIndex, Vec3 endIndex)
 	}
 }
 
-// Visually represent the cells in the grid (and the search waypoints if in debug mode)
+// Draw every cell in the grid (and the search waypoints if in debug mode)
 void Grid::Draw(bool debugMode)
 {
 	for (int row = 0; row < NUM_CELLS; row++)
@@ -286,7 +301,7 @@ void Grid::Draw(bool debugMode)
 		for (int column = 0; column < NUM_CELLS; column++)
 		{
 			m_gridArray[row][column].Draw(debugMode);
-			// Draw the edges of the cell
+			// Draw the cells boundaries so the maps grid structure is visible
 			DrawRectangleLines(m_gridArray[row][column].m_position.x - (CELL_SIZE / 2), m_gridArray[row][column].m_position.y - (CELL_SIZE / 2), CELL_SIZE, CELL_SIZE, BLACK);
 		}
 	}
@@ -294,7 +309,7 @@ void Grid::Draw(bool debugMode)
 	// If in debug mode, draw the search waypoints
 	if (debugMode)
 	{
-		for (auto waypoint : m_searchWaypoints)
+		for (auto waypoint : m_waypoints)
 		{
 			waypoint->Draw();
 		}

@@ -9,7 +9,9 @@ std::vector<Player*> Player::m_playerUnits = std::vector<Player*>();
 // Initialise the static armyDefeated bool as false
 bool Player::m_armyDefeated = false;
 
-// Construct the player with mouse follow behaviour, and set the target to the players starting position
+// The Player constructor will initialise the static leader pointer if this is the first player unit being created,
+// sets this player unit's position to be a random position within 20 units of the leader, and finally adds this unit to the 
+// playerUnits vector.
 Player::Player(Grid* grid, float radius) : Agent(grid, radius)
 {
 	// If this is the first player agent being created, make it the leader and add control behaviour
@@ -18,7 +20,7 @@ Player::Player(Grid* grid, float radius) : Agent(grid, radius)
 		m_leader = this;
 	}
 
-	m_position = Vec3(m_leader->m_position.x + (rand() % 100), m_leader->m_position.y + (rand() % 100), 0);
+	m_position = Vec3(m_leader->m_position.x + (rand() % 20), m_leader->m_position.y + (rand() % 20), 0);
 	m_playerUnits.push_back(this);
 }
 
@@ -27,6 +29,10 @@ Player::~Player()
 
 }
 
+// Update will first attempt to collect any resources present in this player unit's current cell, it will then
+// update the maximum movement speed of the player army based on how many units are present. The function
+// will then either check for player input to create a new path and move along it, or engage in combat with the 
+// enemy units depending on it's static state.
 void Player::Update(float deltaTime)
 {
 	// Attempt to collect a resource if one is found in this player agents cell
@@ -54,6 +60,7 @@ void Player::Update(float deltaTime)
 		FollowPath();
 		break;
 	case State::STATE_ATTACK:
+		// Clear the path and engage in combat
 		m_path.clear();
 		AttackSequence(deltaTime);
 		break;
@@ -66,9 +73,11 @@ void Player::Update(float deltaTime)
 		CohesionBehaviour();
 	}
 
+	// Add the forces to the unit
 	UpdateMotion(deltaTime);
 }
 
+// CohesionBehaviour simply applies a force towards the player leader to keep it's units close
 bool Player::CohesionBehaviour()
 {
 	Vec3 leaderDisplacement = m_leader->m_position - m_position;
@@ -78,6 +87,10 @@ bool Player::CohesionBehaviour()
 	return true;
 }
 
+// SeparationBehaviour iterates through all the other player units and finds the
+// average force away from all of them, finally adding this force to this unit's
+// current force multiplied by the separation factor. The force away from any
+// one unit is inversely proportional to the distance between this unit and the other.
 bool Player::SeparationBehaviour()
 {
 	Vec3 averageForce = Vec3(0, 0, 0);
@@ -107,21 +120,22 @@ bool Player::SeparationBehaviour()
 	return true;
 }
 
-// Adds a new player unit into the playerUnits vector
+// AddUnit is an Agent override, and simply creates a new player agent
 void Player::AddUnit()
 {
 	Player* newUnit = new Player(m_grid, m_radius);
-	// Spawn the new unit at a random position near the leader
-	newUnit->m_position = m_leader->m_position + Vec3(rand() % 50, rand() % 50, 0) - Vec3(rand() % 50, rand() % 50, 0);
 }
 
-// "Kills" this player unit and removes all references of it
+// KillUnit will delete this player unit, while also making sure that all references
+// to it are appropriately removed and nullified. The function also checks if the
+// unit being killed is the last in the army, or is the current leader of the army,
+// as these are special cases that are handled differently.
 void Player::KillUnit()
 {
 	// Remove this unit from the playerUnits list
 	m_playerUnits.erase(std::find(m_playerUnits.begin(), m_playerUnits.end(), this));
 
-	// If killing the last enemy in the enemy army, exit early for a player win state
+	// If killing the last player in the player army, exit early for an enemy win state
 	if (m_playerUnits.size() == 0)
 	{
 		Player::m_armyDefeated = true;
@@ -131,9 +145,9 @@ void Player::KillUnit()
 	// If killing the leader unit, replace it with the next in charge
 	if (this == m_leader)
 	{
-		// Transfer the leaders target to the new leader
+		// Transfer the current player leader's target to the new leader
 		m_playerUnits.front()->m_target = m_leader->m_target;
-		// Repoint the player armies leader pointer to the new leader
+		// Repoint the player army's leader pointer to the new leader
 		m_leader = m_playerUnits.front();
 
 		// Replace the enemy leaders target pointer with the new player leader
@@ -148,7 +162,9 @@ void Player::KillUnit()
 	delete this;
 }
 
-// Returns the closest unit in this player's army to the inputted agent
+// FindClosest will iterate through the player army and return a pointer to the player unit
+// that is closest to the inputted agent, this function is used for enemy units to determine
+// which player unit they should target for attack.
 Agent* Player::FindClosest(Agent* agent)
 {
 	Agent* closestPlayer = m_playerUnits.front();
@@ -167,13 +183,14 @@ Agent* Player::FindClosest(Agent* agent)
 	return closestPlayer;
 }
 
-// Run attack procedures
+// AttackSequence will update this units attack target with the closest player unit to it and then
+// attempt to attack it if within range and if its attack is not on cooldown.
 void Player::AttackSequence(float deltaTime)
 {
-	// Update this agents attack target with the current closest enemy
+	// Update this agents attack target with the current closest enemy unit
 	m_attackTarget = m_leader->m_target->FindClosest(this);
 
-	// Seek the attack target, if within attack range, then attempt to attack it if the attack cooldown has run out
+	// Seek the attack target, if within attack range Seek returns true, then attempt to attack it if the attack cooldown has run out
 	m_attackCooldown -= deltaTime;
 	if (SeekBehaviour(m_attackTarget) && m_attackCooldown <= 0)
 	{
@@ -192,6 +209,9 @@ void Player::AttackSequence(float deltaTime)
 	}
 }
 
+// Update motion will either add the force calculated this frame to this player's velocity (for normal units), or
+// will simply set this player's velocity to the force itself (for leader units), this is so that the leader unit
+// always stays squarly on it's path, whereas other enemy units float around less stiffly.
 void Player::UpdateMotion(float deltaTime)
 {
 	if (this == m_leader)
@@ -211,27 +231,34 @@ void Player::UpdateMotion(float deltaTime)
 	m_velocity = m_velocity * m_frictionModifier;
 }
 
-// Draw the player as a polygon and the mouse follow target
+// Draw will draw the player leader as a blue circle, and will draw other player units as a dark blue circle.
+// Draw will also draw out the player leader's currrent path as a yellow line.
 void Player::Draw()
 {
 	if (this == m_leader)
 	{
-		// Draw out the player's path
+		// First draw a line from the player leader to the first cell in its path
 		if (m_path.size() > 0)
+		{
 			DrawLine(m_position.x, m_position.y, m_path.front()->m_position.x, m_path.front()->m_position.y, YELLOW);
+		}
+		// Then for each cell in the path, call draw on it and pass the next cell in the path as the target parameter
 		for (int i = 0; i < m_path.size(); i++)
 		{
 			if (i + 1 < (int)m_path.size())
-				m_path[i]->Draw(false, true, m_path[i + 1]);
+				m_path[i]->Draw(false, m_path[i + 1]);
 			else
-				m_path[i]->Draw(false, true, m_path[i]);
+				m_path[i]->Draw(false, m_path[i]);
 		}
 
-		// Draw the player leader in yellow
-		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, YELLOW);
+		// Draw the player leader in blue
+		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, BLUE);
 	}
 	else
-		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, PURPLE);
+	{
+		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, DARKBLUE);
+	}
 	
+	// Draw a black border around the player unit
 	DrawPolyLines({ m_position.x, m_position.y }, 6, m_radius, 0, BLACK);
 }

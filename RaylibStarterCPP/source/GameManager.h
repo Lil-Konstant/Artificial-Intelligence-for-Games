@@ -9,26 +9,22 @@ class GameManager
 private:
 	Grid* m_grid = nullptr;
 
-	enum class WinState
-	{
-		STATE_PLAYER_WIN,
-		STATE_ENEMY_WIN
-	};
-
 public:
 	int m_screenSize;
 	bool m_debugMode = false;
-	
-	WinState GetPlayerWin() { return WinState::STATE_PLAYER_WIN; }
-	WinState GetEnemyWin() { return WinState::STATE_ENEMY_WIN; }
 
+	// Pointers to each armies leaders used to call various function on each class
 	Player* m_playerLeader = nullptr;
 	EnemyAgent* m_enemyLeader = nullptr;
 
+	// Intialisation functions
 	void Init(bool debugMode, float screenSize);
+	void InitialiseTerrain();
+	
+	// Iteratively call update on every agent in each army
 	void UpdatePlayerArmy(float deltaTime);
 	void UpdateEnemyArmy(float deltaTime);
-	void WinSequence(WinState winState);
+	
 	void Draw();
 	void DebugMechanics();
 };

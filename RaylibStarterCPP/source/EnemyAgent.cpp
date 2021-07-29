@@ -9,6 +9,12 @@ std::vector<EnemyAgent*> EnemyAgent::m_enemyUnits = std::vector<EnemyAgent*>();
 // Initialise the static armyDefeated bool as false
 bool EnemyAgent::m_armyDefeated = false;
 
+// The EnemyAgent constructor takes input of its radius, the grid its being placed on, as well as 
+// an agent target (which is always the player leader). The constructor then sets this armies leader
+// pointer to this unit if it's the first unit being created. The function sets this enemy's position
+// to be a random position within 20 units of the leader, and adds this unit to the enemyUnits vector.
+// Finally this function sets up the AI decision tree used for choosing which action the enemy leader
+// should enact every decision tick.
 EnemyAgent::EnemyAgent(Agent* target, Grid* grid, float radius) : Agent(grid, radius)
 {
 	// Initialise the first enemy agent as the enemy leader
@@ -17,8 +23,8 @@ EnemyAgent::EnemyAgent(Agent* target, Grid* grid, float radius) : Agent(grid, ra
 		m_leader = this;
 	}
 
-	// Spawn this unit within 50 units of the enemy leader
-	m_position = Vec3(m_leader->m_position.x + (rand() % 50), m_leader->m_position.y + (rand() % 50), 0);
+	// Spawn this unit within 20 units of the enemy leader
+	m_position = Vec3(m_leader->m_position.x + (rand() % 20), m_leader->m_position.y + (rand() % 20), 0);
 	m_enemyUnits.push_back(this);
 
 	// Set this AI's target to be the player leader
@@ -26,10 +32,13 @@ EnemyAgent::EnemyAgent(Agent* target, Grid* grid, float radius) : Agent(grid, ra
 
 	// Construct decision tree for the enemy agent (refer to the diagram in the TDD for a better view of the decision tree, as it uses the same branch numbering)
 	TrueFalseDecision* branch3 = new TrueFalseDecision(new GatherAction(), new SearchAction(), new ResourcesRemain());
-	TrueFalseDecision* branch4 = new TrueFalseDecision(new FleeAction(), new PursueAction(), new ResourcesRemain());
+	TrueFalseDecision* branch6 = new TrueFalseDecision(new GatherAction(), new PursueAction(), new ResourcesRemain());
+	TrueFalseDecision* branch7 = new TrueFalseDecision(new FleeAction(), new PursueAction(), new ResourcesRemain());
+	TrueFalseDecision* branch4 = new TrueFalseDecision(new PursueAction(), branch6, new IsStronger());
+	TrueFalseDecision* branch5 = new TrueFalseDecision(new PursueAction(), branch7, new IsStronger());
 	TrueFalseDecision* branch1 = new TrueFalseDecision(new SearchAction(), branch3, new IsStronger());
-	TrueFalseDecision* branch2 = new TrueFalseDecision(new PursueAction(), branch4, new IsStronger());
-	m_rootDecision = new TrueFalseDecision(branch2, branch1, new InRange());
+	TrueFalseDecision* branch2 = new TrueFalseDecision(branch5, branch4, new InFleeRange());
+	m_rootDecision = new TrueFalseDecision(branch2, branch1, new InPursueRange());
 }
 
 EnemyAgent::~EnemyAgent()
@@ -37,6 +46,12 @@ EnemyAgent::~EnemyAgent()
 
 }
 
+// Update will first attempt to collect any resources present in this enemy's current cell, it will then
+// update the maximum movement speed of the enemy army based on how many units are present. The function
+// then attempts to traverse the AI's decision tree (if update is being called by the leader and if the
+// decision timer has run down) to enact the appropriate action and update the enemy's path. The function
+// will then either move the agent along it's calculated path, or engage in combat with the player units
+// depending on it's static state.
 void EnemyAgent::Update(float deltaTime)
 {
 	// Attempt to collect a resource if one is found in this enemy agents cell
@@ -64,6 +79,7 @@ void EnemyAgent::Update(float deltaTime)
 		FollowPath();
 		break;
 	case State::STATE_ATTACK:
+		// Clear the path and engage in combat
 		m_path.clear();
 		AttackSequence(deltaTime);
 		break;
@@ -76,9 +92,12 @@ void EnemyAgent::Update(float deltaTime)
 		CohesionBehaviour();
 	}
 
+	// Add the forces to the unit
 	UpdateMotion(deltaTime);
 }
 
+
+// CohesionBehaviour simply applies a force towards the enemy leader to keep it's units close
 bool EnemyAgent::CohesionBehaviour()
 {
 	Vec3 leaderDisplacement = m_leader->m_position - m_position;
@@ -88,6 +107,10 @@ bool EnemyAgent::CohesionBehaviour()
 	return true;
 }
 
+// SeparationBehaviour iterates through all the other enemy units and finds the
+// average force away from all of them, finally adding this force to this unit's
+// current force multiplied by the separation factor. The force away from any
+// one unit is inversely proportional to the distance between this unit and the other.
 bool EnemyAgent::SeparationBehaviour()
 {
 	Vec3 averageForce = Vec3(0, 0, 0);
@@ -117,14 +140,16 @@ bool EnemyAgent::SeparationBehaviour()
 	return true;
 }
 
+// AddUnit is an Agent override, and simply creates a new enemy agent
 void EnemyAgent::AddUnit()
 {
 	EnemyAgent* newUnit = new EnemyAgent(m_target, m_grid, m_radius);
-	// Spawn the new unit at a random position near the leader
-	newUnit->m_position = m_leader->m_position + Vec3(rand() % 50, rand() % 50, 0) - Vec3(rand() % 50, rand() % 50, 0);
 }
 
-// "Kills" this enemy unit and removes all references of it
+// KillUnit will delete this enemy unit, while also making sure that all references
+// to it are appropriately removed and nullified. The function also checks if the
+// unit being killed is the last in the army, or is the current leader of the army,
+// as these are special cases that are handled differently.
 void EnemyAgent::KillUnit()
 {
 	// Remove this unit from the enemyUnits list
@@ -140,12 +165,12 @@ void EnemyAgent::KillUnit()
 	// If killing the leader unit, replace it with the next in charge
 	if (this == m_leader)
 	{
-		// Transfer the leaders target to the new leader
+		// Transfer the current enemy leader's target to the new leader
 		m_enemyUnits.front()->m_target = m_leader->m_target;
-		// Repoint the enemy armies leader pointer to the next in charge
+		// Repoint the enemy army's leader pointer to the next in charge
 		m_leader = m_enemyUnits.front();
 
-		// Replace the player leaders target pointer with the new enemy leader
+		// Replace the player leader's target pointer with the new enemy leader
 		m_target->m_target = m_leader;
 
 		// Return before deleting this as it will invalidate the pointer in the main game loop (delete it there instead)
@@ -157,7 +182,9 @@ void EnemyAgent::KillUnit()
 	delete this;
 }
 
-// Finds the closest enemy agent in this army to the inputted agent
+// FindClosest will iterate through the enemy army and return a pointer to the enemy unit
+// that is closest to the inputted agent, this function is used for player units to determine
+// which enemy they should target for attack.
 Agent* EnemyAgent::FindClosest(Agent* agent)
 {
 	Agent* closestEnemy = m_enemyUnits.front();
@@ -176,17 +203,18 @@ Agent* EnemyAgent::FindClosest(Agent* agent)
 	return closestEnemy;
 }
 
-// Run attack procedures
+// AttackSequence will update this units attack target with the closest player unit to it and then
+// attempt to attack it if within range and if its attack is not on cooldown.
 void EnemyAgent::AttackSequence(float deltaTime)
 {
-	// Update this agents attack target with the current closest enemy
+	// Update this agents attack target with the current closest player unit
 	m_attackTarget = m_leader->m_target->FindClosest(this);
 
-	// Seek the attack target, if within attack range, then attempt to attack it if the attack cooldown has run out
+	// Seek the attack target, if within attack range Seek returns true, then attempt to attack it if the attack cooldown has run out
 	m_attackCooldown -= deltaTime;
 	if (SeekBehaviour(m_attackTarget) && m_attackCooldown <= 0)
 	{
-		// Damages this agents attack target and is true if the target is now dead
+		// Damages this enemy's attack target and is true if the target is now dead
 		if (m_attackTarget->TakeDamage(m_damage))
 		{
 			// Destroy the target and remove all references to it
@@ -201,6 +229,9 @@ void EnemyAgent::AttackSequence(float deltaTime)
 	}
 }
 
+// Update motion will either add the force calculated this frame to this enemy's velocity (for normal units), or
+// will simply set this enemy's velocity to the force itself (for leader units), this is so that the leader unit
+// always stays squarly on it's path, whereas other enemy units float around less stiffly.
 void EnemyAgent::UpdateMotion(float deltaTime)
 {
 	if (this == m_leader)
@@ -220,26 +251,18 @@ void EnemyAgent::UpdateMotion(float deltaTime)
 	m_velocity = m_velocity * m_frictionModifier;
 }
 
+// Draw will draw the enemy leader as a red hexagon, and will draw other enemy units as a maroon hexagon
 void EnemyAgent::Draw()
 {
 	if (this == m_leader)
 	{
-		// Draw out the enemy's path
-		if (m_path.size() > 0)
-			DrawLine(m_position.x, m_position.y, m_path.front()->m_position.x, m_path.front()->m_position.y, YELLOW);
-		for (int i = 0; i < m_path.size(); i++)
-		{
-			if (i + 1 < (int)m_path.size())
-				m_path[i]->Draw(false, true, m_path[i + 1]);
-			else
-				m_path[i]->Draw(false, true, m_path[i]);
-		}
-
-		// Draw the enemy leader in black
-		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, BLACK);
+		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, RED);
 	}
 	else
-		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, RED);
+	{
+		DrawPoly({ m_position.x, m_position.y }, 6, m_radius, 0, MAROON);
+	}
 
+	// Draw a black border around the enemy unit
 	DrawPolyLines({ m_position.x, m_position.y }, 6, m_radius, 0, BLACK);
 }

@@ -4,10 +4,10 @@
 class Resource : public GameObject
 {
 public:
-	Resource(float radius);
-	~Resource();
+	Resource(float radius) : GameObject(radius) {};
+	~Resource() {};
+	void Update(float deltaTime) override {};
 
-	void Update(float deltaTime) override;
 	void Draw() override;
 	bool TryCollision(GameObject* other);
 };

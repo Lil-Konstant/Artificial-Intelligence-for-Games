@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="source\Agent.cpp" />
     <ClCompile Include="source\Cell.cpp" />
+    <ClCompile Include="source\DecisionTree.cpp" />
     <ClCompile Include="source\EnemyAgent.cpp" />
     <ClCompile Include="source\GameManager.cpp" />
     <ClCompile Include="source\Grid.cpp" />
@@ -28,7 +29,7 @@
     <ClCompile Include="source\MathsClasses.cpp" />
     <ClCompile Include="source\Player.cpp" />
     <ClCompile Include="source\Resource.cpp" />
-    <ClCompile Include="source\SearchWaypoint.cpp" />
+    <ClCompile Include="source\Waypoint.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\Agent.h" />
@@ -42,7 +43,7 @@
     <ClInclude Include="source\MathsClasses.h" />
     <ClInclude Include="source\Player.h" />
     <ClInclude Include="source\Resource.h" />
-    <ClInclude Include="source\SearchWaypoint.h" />
+    <ClInclude Include="source\Waypoint.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

@@ -42,7 +42,10 @@
     <ClCompile Include="source\Cell.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\SearchWaypoint.cpp">
+    <ClCompile Include="source\Waypoint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\DecisionTree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -80,7 +83,7 @@
     <ClInclude Include="source\GameManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\SearchWaypoint.h">
+    <ClInclude Include="source\Waypoint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
