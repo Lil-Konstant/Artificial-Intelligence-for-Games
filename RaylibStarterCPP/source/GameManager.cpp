@@ -179,7 +179,7 @@ void GameManager::Draw()
             unit->Draw();
 
         DrawText(TextFormat("You Lose!"), m_screenSize / 2 - 130, 30, 60, BLACK);
-        DrawText("Press Esc To Exit...", 300, 100, 25, BLACK);
+        DrawText("Press Esc To Exit...", 300, 90, 25, BLACK);
     }
 
     // Otherwise draw the screen as normal
